@@ -53,7 +53,7 @@ export function JelliChat() {
   // Función para inicializar el worker
   const initializeWorker = useCallback(() => {
     if (window.Worker) {
-      const worker = new Worker("/llm-worker.js")
+      const worker = new Worker("/llm-worker.js", { type: "module" });
       workerRef.current = worker
 
       // Enviar comando para cargar el modelo
