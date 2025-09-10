@@ -86,7 +86,7 @@ export function LoginForm() {
       </div>
 
       {/* Social Login */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="flex flex-wrap gap-2 flex-row items-center justify-center">
         <Button variant="outline" className="bg-transparent">
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
             <path

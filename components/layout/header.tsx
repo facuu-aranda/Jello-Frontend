@@ -1,8 +1,9 @@
 "use client"
 
-import * as React from "react"
-import { Bell, MessageSquare, Menu } from "lucide-react"
+// Importa useState y useEffect de React
+import { useState, useEffect } from "react" 
 import { motion } from "framer-motion"
+import { Bell, MessageSquare, Menu, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { SearchBar } from "@/components/search-bar"
@@ -12,10 +13,20 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Sidebar } from "./sidebar"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useTheme } from "@/contexts/theme-context" // Asegúrate de tener esta importación
 
 export function Header() {
-  const [notificationCount] = React.useState(3)
+  const [notificationCount] = useState(3)
   const isMobile = useIsMobile()
+  const { theme, toggleTheme } = useTheme()
+
+  // --- SOLUCIÓN DE HIDRATACIÓN ---
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+  // --------------------------------
 
   return (
     <motion.header
@@ -25,56 +36,24 @@ export function Header() {
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
       <div className="flex items-center justify-between h-full px-3 sm:px-4 md:px-6">
-        {/* Mobile Menu + Search */}
+        {/* Lógica del menú y la búsqueda */}
         <div className="flex items-center gap-2 flex-1">
-          {/* Mobile Hamburger Menu */}
-          {isMobile && (
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="w-5 h-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-64">
-                <Sidebar />
-              </SheetContent>
-            </Sheet>
-          )}
-
-          {/* Search - Responsive width */}
+          {/* ... (código existente) ... */}
           <div className="flex-1 max-w-xs sm:max-w-sm md:max-w-md">
             <SearchBar />
           </div>
         </div>
+        
+        {/* --- BOTÓN DE PRUEBA CORREGIDO --- */}
+        {isMounted && (
+          <button onClick={toggleTheme} className="p-2 border rounded-full">
+            {theme === 'dark' ? <Sun/> : <Moon/>}
+          </button>
+        )}
+        {/* --------------------------------- */}
 
-        {/* Actions - Responsive spacing */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
-          {/* AI Chat Button - Hidden on small mobile */}
-          <Button variant="ghost" size="icon" className="hidden xs:flex relative">
-            <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
-          </Button>
-
-          {/* Notifications */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-                {notificationCount > 0 && (
-                  <Badge
-                    variant="destructive"
-                    className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 text-xs flex items-center justify-center p-0"
-                  >
-                    {notificationCount}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 sm:w-80 p-0" align="end">
-              <NotificationPanel />
-            </PopoverContent>
-          </Popover>
-
-          {/* User Menu */}
+          {/* ... (código existente de tus acciones y UserMenu) ... */}
           <UserMenu />
         </div>
       </div>

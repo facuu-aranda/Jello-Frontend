@@ -1,4 +1,4 @@
-                                                                                                                                                                                                                                                                                                                                                                                                {
+{
   "name": "jello-app",
   "version": "0.1.0",
   "private": true,
@@ -11,6 +11,7 @@
   "dependencies": {
     "@emotion/is-prop-valid": "latest",
     "@hookform/resolvers": "^3.10.0",
+    "@mlc-ai/web-llm": "^0.2.79",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
     "@radix-ui/react-aspect-ratio": "1.1.1",

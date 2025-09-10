@@ -64,11 +64,10 @@ export function AssignedTasksWidget() {
         {tasks.map((task, index) => (
           <motion.div
             key={task.id}
-            className="flex items-center gap-4 p-3 rounded-xl hover:bg-accent/50 transition-colors cursor-pointer"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            className="flex flex-wrap items-center gap-4 p-3 rounded-xl hover:bg-accent/50 transition-colors cursor-pointer"
+            initial={{ opacity: 0}}
+            animate={{ opacity: 1}}
             transition={{ delay: index * 0.1 }}
-            whileHover={{ x: 4 }}
           >
             {/* Priority Indicator */}
             <div
@@ -106,7 +105,7 @@ export function AssignedTasksWidget() {
       </div>
 
       {/* Quick Actions */}
-      <div className="flex gap-2 pt-4 border-t border-border">
+      <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
         <Button variant="outline" size="sm" className="flex-1 bg-transparent">
           <CheckCircle className="w-4 h-4 mr-2" />
           Mark Complete

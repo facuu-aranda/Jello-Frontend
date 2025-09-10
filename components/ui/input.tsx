@@ -20,13 +20,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, type,
           error && "border-destructive focus-visible:ring-destructive",
           className,
         )}
-        ref={ref}
-        whileFocus={{ scale: 1.02 }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        {...props}
+        ref={ref} {...props}
       />
       {error && (
-        <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-sm text-destructive">
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-destructive">
           {error}
         </motion.p>
       )}

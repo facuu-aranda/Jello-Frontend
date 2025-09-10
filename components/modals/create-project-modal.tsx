@@ -91,15 +91,10 @@ export function CreateProjectModal({ isOpen, onClose, onSubmit }: CreateProjectM
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
         >
           <ModalHeader className="border-b border-border pb-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg sm:text-xl font-semibold text-foreground">Create New Project</h2>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="w-4 h-4" />
-              </Button>
             </div>
           </ModalHeader>
 

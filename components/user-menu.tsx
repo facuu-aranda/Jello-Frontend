@@ -1,7 +1,6 @@
 "use client"
 import { User, Settings, LogOut, Moon, Sun } from "lucide-react"
 import type React from "react"
-
 import { useTheme } from "@/contexts/theme-context"
 import { motion } from "framer-motion"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -20,13 +19,8 @@ export function UserMenu() {
   const { theme, toggleTheme } = useTheme()
   const router = useRouter()
 
-  const handleThemeToggle = (event: React.MouseEvent) => {
-    const rect = event.currentTarget.getBoundingClientRect()
-    const x = rect.left + rect.width / 2
-    const y = rect.top + rect.height / 2
-
-    toggleTheme({ x, y })
-  }
+  // Ya no necesitamos una función handle específica,
+  // pasaremos el evento directamente en el onClick.
 
   return (
     <DropdownMenu>
@@ -60,7 +54,8 @@ export function UserMenu() {
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleThemeToggle}>
+        {/* Pasamos el evento directamente a toggleTheme */}
+        <DropdownMenuItem onClick={toggleTheme}>
           {theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
           <span>Toggle theme</span>
         </DropdownMenuItem>

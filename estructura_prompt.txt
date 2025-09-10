@@ -6,12 +6,14 @@ Estoy trabajando en el siguiente proyecto:
 
 
 📂 **Estructura del proyecto:**  
-- 📁 jello-productivity
+- 📁 frontend
   - 📄 components.json
+  - 📄 next-env.d.ts
   - 📄 next.config.mjs
   - 📄 package.json
   - 📄 pnpm-lock.yaml
   - 📄 postcss.config.mjs
+  - 📄 README.md
   - 📄 tsconfig.json
   - 📁 app
     - 📄 globals.css
@@ -21,15 +23,11 @@ Estoy trabajando en el siguiente proyecto:
       - 📄 page.tsx
     - 📁 dashboard
       - 📄 page.tsx
-    - 📁 login
-      - 📄 page.tsx
     - 📁 project
       - 📁 [projectId]
         - 📄 page.tsx
     - 📁 projects
       - 📄 loading.tsx
-      - 📄 page.tsx
-    - 📁 register
       - 📄 page.tsx
     - 📁 settings
       - 📄 page.tsx
@@ -49,6 +47,7 @@ Estoy trabajando en el siguiente proyecto:
       - 📄 page.tsx
   - 📁 components
     - 📄 animated-background.tsx
+    - 📄 estructura_prompt.txt
     - 📄 jelli-chat.tsx
     - 📄 login-form.tsx
     - 📄 notification-panel.tsx

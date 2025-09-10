@@ -1,22 +1,15 @@
-import type React from "react"
+import "./globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
-import { ThemeProvider as NextThemeProvider } from "@/components/theme-provider"
-import { ThemeProvider } from "@/contexts/theme-context"
-import { Suspense } from "react"
-import "./globals.css"
+import { GeistSans } from "geist/font/sans"
+import { ThemeProvider } from "@/contexts/theme-context" // Importamos nuestro proveedor principal
+import { Toaster } from "@/components/ui/sonner"
 
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-})
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export const metadata: Metadata = {
-  title: "Jello - Your Intelligent Productivity Ecosystem",
-  description: "A unified productivity ecosystem that adapts to you, not the other way around.",
-  generator: "v0.app",
+  title: "Jello",
+  description: "Your intelligent productivity ecosystem",
 }
 
 export default function RootLayout({
@@ -26,13 +19,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans ${inter.variable} antialiased`}>
-        <Suspense fallback={null}>
-          <NextThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange={false}>
-            <ThemeProvider>{children}</ThemeProvider>
-          </NextThemeProvider>
-        </Suspense>
-        <Analytics />
+      <body className={`${GeistSans.variable} ${inter.variable} font-sans`}>
+        {/* Nuestro ThemeProvider ahora gestiona todo */}
+        <ThemeProvider>
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   )

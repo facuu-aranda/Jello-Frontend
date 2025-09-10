@@ -86,7 +86,6 @@ export function KanbanColumn({ column, onTaskEdit, onAddTask }: KanbanColumnProp
         <motion.button
           className="w-full p-4 border-2 border-dashed border-border rounded-2xl text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
           onClick={() => onAddTask?.(column.id)}
-          whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
           <Plus className="w-5 h-5 mx-auto mb-2" />

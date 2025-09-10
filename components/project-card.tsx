@@ -33,10 +33,9 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
   return (
     <motion.div
       className="glass-card p-6 space-y-4 group hover:shadow-xl transition-all duration-300"
-      whileHover={{ y: -2 }}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      whileHover={{ scale: 1.02}}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1}}
     >
       {/* Header */}
       <div className="flex items-start justify-between">

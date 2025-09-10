@@ -41,6 +41,8 @@
 
 .dark {
   --background: oklch(0.145 0 0);
+  
+  --glass-background: oklch(14.479% 0.00002 271.152 / 0.589);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.145 0 0);
   --card-foreground: oklch(0.985 0 0);

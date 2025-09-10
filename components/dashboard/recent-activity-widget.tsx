@@ -104,7 +104,7 @@ export function RecentActivityWidget() {
       </div>
 
       {/* Quick Actions */}
-      <div className="flex gap-2 pt-4 border-t border-border">
+      <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
         <Button variant="outline" size="sm" className="flex-1 bg-transparent">
           Mark All Read
         </Button>
