@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Send, MoreVertical, Bot, RefreshCw } from "lucide-react"
+import { Send, MoreVertical, Bot, RefreshCw, Sparkle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
@@ -19,7 +19,7 @@ interface ChatMessage {
 const JelliLoading = ({ status, progress, error, onRetry }: { status: string, progress: number, error: string | null, onRetry: () => void }) => (
   <div className="flex flex-col items-center justify-center h-full text-center p-6">
     <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring" }}>
-      <Avatar className="w-16 h-16 mb-4 border-4 border-jello-blue/30"><Bot className="w-8 h-8" /></Avatar>
+      <Avatar className="w-16 h-16 border-4 mb-4 border-jello-blue/30"><Bot className="w-8 h-8 m-auto" /></Avatar>
     </motion.div>
     <h3 className="text-lg font-semibold text-foreground mb-2">Jelli se está preparando</h3>
     <p className="text-sm text-muted-foreground mb-4 max-w-xs">
@@ -50,16 +50,13 @@ export function JelliChat() {
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const workerRef = useRef<Worker | null>(null)
 
-  // Función para inicializar el worker
   const initializeWorker = useCallback(() => {
     if (window.Worker) {
       const worker = new Worker("/llm-worker.js", { type: "module" });
       workerRef.current = worker
 
-      // Enviar comando para cargar el modelo
       worker.postMessage({ type: 'load' })
 
-      // Manejar mensajes que llegan desde el worker
       worker.onmessage = (event) => {
         const { type, payload } = event.data
         switch (type) {
@@ -77,13 +74,19 @@ export function JelliChat() {
             break
           case 'chat-chunk':
             setMessages(prev => {
-              const lastMessage = prev[prev.length - 1]
-              if (lastMessage.sender === 'jelli') {
-                lastMessage.content += payload
-                return [...prev.slice(0, -1), lastMessage]
+              const newMessages = [...prev];
+              const lastMessage = newMessages[newMessages.length - 1];
+
+              if (lastMessage && lastMessage.sender === 'jelli') {
+                const updatedMessage = {
+                  ...lastMessage,
+                  content: lastMessage.content + payload,
+                };
+                newMessages[newMessages.length - 1] = updatedMessage;
+                return newMessages;
               }
-              return prev
-            })
+              return prev;
+            });
             break
         }
       }
@@ -92,7 +95,7 @@ export function JelliChat() {
 
   useEffect(() => {
     initializeWorker()
-    return () => workerRef.current?.terminate() // Limpiar el worker al desmontar
+    return () => workerRef.current?.terminate()
   }, [initializeWorker])
 
   useEffect(() => {
@@ -110,10 +113,35 @@ export function JelliChat() {
       sender: "user",
       timestamp: new Date(),
     }
-    setMessages(prev => [...prev, userMessage, { id: (Date.now() + 1).toString(), content: "", sender: "jelli", timestamp: new Date() }])
 
-    workerRef.current?.postMessage({ type: 'chat', payload: { prompt: inputValue } })
+    // 👇 --- SECCIÓN CORREGIDA Y OPTIMIZADA --- 👇
+    // 1. Preparamos el historial para la IA, asegurándonos de que esté limpio y correcto.
+    const historyForAI = [...messages, userMessage]
+      .filter(msg => msg.id !== 'init' && msg.id !== 'init-reset') // Filtramos mensajes iniciales
+      .map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }));
+
+    // 2. Enviamos el historial limpio al worker.
+    workerRef.current?.postMessage({ type: 'chat', payload: { history: historyForAI } });
+
+    // 3. Actualizamos la UI de forma optimista.
+    setMessages(prev => [
+      ...prev,
+      userMessage,
+      { id: (Date.now() + 1).toString(), content: "", sender: "jelli", timestamp: new Date() }
+    ]);
+
     setInputValue("")
+    // 👆 --- FIN DE LA SECCIÓN CORREGIDA --- 👆
+  }
+
+  const handleNewChat = () => {
+    workerRef.current?.postMessage({ type: 'reset' });
+    setMessages([
+      { id: "init-reset", content: "Ok, empecemos de nuevo. ¿En qué puedo ayudarte?", sender: "jelli", timestamp: new Date() }
+    ]);
   }
 
   return (
@@ -124,7 +152,7 @@ export function JelliChat() {
         <>
           <div className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
             <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10 border-2 border-jello-blue/30"><Bot /></Avatar>
+              <Avatar className="w-10 h-10 border-2 border-jello-blue/30"><Bot className=" m-auto"/></Avatar>
               <div>
                 <h3 className="font-semibold text-foreground">Jelli</h3>
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -133,7 +161,10 @@ export function JelliChat() {
                 </p>
               </div>
             </div>
-            <Button variant="ghost" size="sm"><MoreVertical className="w-4 h-4" /></Button>
+            <Button variant="ghost" size="sm" onClick={handleNewChat} title="Start new chat">
+              <Sparkle className="w-4 h-4 mr-2" />
+              New
+            </Button>
           </div>
 
           <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -145,7 +176,7 @@ export function JelliChat() {
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex gap-3 ${message.sender === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  {message.sender === "jelli" && <Avatar className="w-8 h-8 border border-jello-blue/30 flex-shrink-0"><Bot /></Avatar>}
+                  {message.sender === "jelli" && <Avatar className="w-8 h-8 border border-jello-blue/30 flex-shrink-0"><Bot className=" m-auto"/></Avatar>}
                   <div className={`max-w-[80%] ${message.sender === "user" ? "order-first" : ""}`}>
                     <div className={`p-3 rounded-2xl ${message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-white/10 text-foreground"}`}>
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content || "..."}</p>
