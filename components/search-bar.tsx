@@ -12,10 +12,10 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import { cn } from "@/lib/utils"
 
 export function SearchBar() {
   const [open, setOpen] = React.useState(false)
-  const [search, setSearch] = React.useState("")
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -37,12 +37,16 @@ export function SearchBar() {
       >
         <Button
           variant="outline"
-          className="relative w-full justify-start text-sm text-muted-foreground bg-transparent"
+          className={cn(
+            "relative w-full justify-start text-sm text-muted-foreground bg-transparent",
+            "group-data-[collapsed=true]/sidebar:justify-center group-data-[collapsed=true]/sidebar:px-2"
+          )}
           onClick={() => setOpen(true)}
         >
-          <Search className="mr-2 h-4 w-4" />
-          Search projects, tasks...
-          
+          <Search className="h-4 w-4 group-data-[collapsed=true]/sidebar:mr-0 mr-2" />
+          <span className="group-data-[collapsed=true]/sidebar:hidden">
+            Search projects, tasks...
+          </span>
         </Button>
       </motion.div>
 
