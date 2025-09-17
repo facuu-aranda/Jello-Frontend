@@ -1,24 +1,21 @@
 "use client"
-
 import * as React from "react"
-import { motion } from "framer-motion"
-import { Plus, Check } from "lucide-react"
+import Link from "next/link"
+import { motion, AnimatePresence } from "framer-motion"
+import { Plus, Check, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 
-const initialTodos = [
-  { id: 1, text: "Review quarterly goals", completed: false },
-  { id: 2, text: "Schedule dentist appointment", completed: true },
-  { id: 3, text: "Buy groceries for the week", completed: false },
-  { id: 4, text: "Call mom", completed: false },
-]
-
 export function PersonalTodoWidget() {
-  const [todos, setTodos] = React.useState(initialTodos)
+  const [todos, setTodos] = React.useState([
+    { id: 1, text: "Review quarterly goals", completed: false },
+    { id: 2, text: "Schedule dentist appointment", completed: true },
+    { id: 3, text: "Buy groceries for the week", completed: false },
+  ]);
   const [newTodo, setNewTodo] = React.useState("")
   const [isAdding, setIsAdding] = React.useState(false)
-
+  const [isManaging, setIsManaging] = React.useState(false)
   const toggleTodo = (id: number) => {
     setTodos(todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)))
   }
@@ -29,6 +26,9 @@ export function PersonalTodoWidget() {
       setNewTodo("")
       setIsAdding(false)
     }
+  }
+  const deleteTodo = (id: number) => {
+    setTodos(todos.filter(todo => todo.id !== id));
   }
 
   const completedCount = todos.filter((todo) => todo.completed).length
@@ -67,22 +67,25 @@ export function PersonalTodoWidget() {
 
       {/* Todo List */}
       <div className="space-y-3">
-        {todos.map((todo, index) => (
-          <motion.div
-            key={todo.id}
-            className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
-            <span
-              className={`flex-1 text-sm ${todo.completed ? "line-through text-muted-foreground" : "text-foreground"}`}
-            >
-              {todo.text}
-            </span>
-          </motion.div>
-        ))}
+        <AnimatePresence>
+          {todos.map((todo, index) => (
+            <motion.div key={todo.id} className="flex items-center gap-3 p-2 rounded-lg" /* ... */>
+              <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
+              <span className={`flex-1 text-sm ${todo.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                {todo.text}
+              </span>
+              <AnimatePresence>
+                {isManaging && (
+                  <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
+                    <Button variant="ghost" size="icon" className="w-6 h-6 text-destructive" onClick={() => deleteTodo(todo.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {/* Add New Todo */}
         {isAdding && (
@@ -112,11 +115,11 @@ export function PersonalTodoWidget() {
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
-        <Button variant="outline" size="sm" className="flex-1 bg-transparent">
-          View All
+        <Button asChild variant="outline" size="sm" className="flex-1 bg-transparent">
+          <Link href="/todos">View All</Link>
         </Button>
-        <Button variant="outline" size="sm" className="flex-1 bg-transparent">
-          Manage
+        <Button variant={isManaging ? "destructive" : "outline"} size="sm" className="flex-1 bg-transparent" onClick={() => setIsManaging(!isManaging)}>
+          {isManaging ? "Done" : "Manage"}
         </Button>
       </div>
     </motion.div>

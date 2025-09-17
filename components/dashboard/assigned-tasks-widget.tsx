@@ -1,6 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
+import Link from "next/link" 
 import { CheckCircle, Clock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -55,7 +56,7 @@ export function AssignedTasksWidget() {
           <p className="text-sm text-muted-foreground">Tasks assigned to you across all projects</p>
         </div>
         <Button variant="ghost" size="sm">
-          View all
+           <Link href="/tasks">View all</Link>
         </Button>
       </div>
 

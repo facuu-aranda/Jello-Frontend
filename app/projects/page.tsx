@@ -77,19 +77,20 @@ export default function ProjectsPage() {
   const handleEditProject = (projectData: any) => { console.log("Editing project:", projectData) }
   const handleDeleteProject = (projectId: string) => { console.log("Deleting project:", projectId) }
 
+  // 👇 --- FUNCIÓN CLAVE PARA EVITAR EL CONGELAMIENTO --- 👇
   const openEditModal = (project: any) => {
-    setSelectedProject(project)
-    setIsEditModalOpen(true)
+    setTimeout(() => {
+      setSelectedProject(project);
+      setIsEditModalOpen(true);
+    }, 50); 
   }
 
-  // Lógica clave para cerrar y "limpiar" el modal, evitando el congelamiento.
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
     setTimeout(() => {
         setSelectedProject(null);
-    }, 150); // Delay to allow closing animation
+    }, 150);
   }
-
   return (
     <>
       <AppLayout>
@@ -137,7 +138,22 @@ export default function ProjectsPage() {
                 ))}
               </div>
             </TabsContent>
-            {/* ... otras TabsContent ... */}
+            
+                      <TabsContent value="owned" className="space-y-4 sm:space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                          {filterProjects(ownedProjects).map((project) => (
+                            <ProjectCard key={project.id} project={project} onEdit={() => openEditModal(project)} />
+                          ))}
+                        </div>
+                      </TabsContent>
+            
+                      <TabsContent value="working" className="space-y-4 sm:space-y-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                          {filterProjects(workingProjects).map((project) => (
+                            <ProjectCard key={project.id} project={project} onEdit={() => openEditModal(project)} />
+                          ))}
+                        </div>
+                      </TabsContent>
           </Tabs>
         </div>
       </AppLayout>

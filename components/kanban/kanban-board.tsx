@@ -11,7 +11,7 @@ const mockColumns = [
       {
         id: "1",
         title: "Design new homepage layout",
-        description: "Create wireframes and mockups for the new homepage design",
+        description: "Create wireframes and mockups for the new homepage design.",
         priority: "high" as const,
         labels: [
           { id: "1", name: "Design", color: "#ec4899" },
@@ -22,20 +22,27 @@ const mockColumns = [
           { id: "2", name: "Mike", avatar: "/mike-avatar.jpg" },
         ],
         dueDate: "Dec 15",
-        commentsCount: 3,
-        attachmentsCount: 2,
-        subtasks: { completed: 2, total: 5 },
+        subtasks: [
+          { id: "sub-1-1", text: "Research competitor designs", completed: true },
+          { id: "sub-1-2", text: "Create low-fidelity wireframes", completed: true },
+          { id: "sub-1-3", text: "Develop color palette", completed: false },
+          { id: "sub-1-4", text: "Design high-fidelity mockups", completed: false },
+          { id: "sub-1-5", text: "Prepare assets for development", completed: false },
+        ],
       },
       {
         id: "2",
         title: "Set up authentication system",
+        description: "Implement JWT-based authentication with refresh tokens and password recovery.",
         priority: "critical" as const,
         labels: [{ id: "3", name: "Backend", color: "#14b8a6" }],
         assignees: [{ id: "3", name: "Alex", avatar: "/diverse-user-avatars.png" }],
         dueDate: "Dec 12",
-        commentsCount: 1,
-        attachmentsCount: 0,
-        subtasks: { completed: 0, total: 3 },
+        subtasks: [
+          { id: "sub-2-1", text: "Configure database schema for users", completed: false },
+          { id: "sub-2-2", text: "Create login/register endpoints", completed: false },
+          { id: "sub-2-3", text: "Implement token generation", completed: false },
+        ],
       },
     ],
   },
@@ -47,7 +54,7 @@ const mockColumns = [
       {
         id: "3",
         title: "Implement user dashboard",
-        description: "Build the main dashboard with widgets and analytics",
+        description: "Build the main dashboard with widgets and analytics.",
         priority: "medium" as const,
         labels: [
           { id: "2", name: "Frontend", color: "#8b5cf6" },
@@ -55,9 +62,12 @@ const mockColumns = [
         ],
         assignees: [{ id: "4", name: "Emma", avatar: "/diverse-user-avatars.png" }],
         dueDate: "Dec 20",
-        commentsCount: 5,
-        attachmentsCount: 1,
-        subtasks: { completed: 3, total: 4 },
+        subtasks: [
+          { id: "sub-3-1", text: "Create Assigned Tasks widget", completed: true },
+          { id: "sub-3-2", text: "Create Personal Todo widget", completed: true },
+          { id: "sub-3-3", text: "Create Recent Activity widget", completed: true },
+          { id: "sub-3-4", text: "Integrate with charting library", completed: false },
+        ],
       },
     ],
   },
@@ -69,15 +79,20 @@ const mockColumns = [
       {
         id: "4",
         title: "API documentation",
+        description: "Write and publish comprehensive documentation for all public API endpoints.",
         priority: "low" as const,
         labels: [{ id: "5", name: "Documentation", color: "#10b981" }],
         assignees: [
           { id: "5", name: "John", avatar: "/diverse-user-avatars.png" },
           { id: "6", name: "Lisa", avatar: "/diverse-user-avatars.png" },
         ],
-        commentsCount: 2,
-        attachmentsCount: 3,
-        subtasks: { completed: 4, total: 4 },
+        dueDate: "Dec 22",
+        subtasks: [
+          { id: "sub-4-1", text: "Document /auth endpoints", completed: true },
+          { id: "sub-4-2", text: "Document /projects endpoints", completed: true },
+          { id: "sub-4-3", text: "Document /tasks endpoints", completed: true },
+          { id: "sub-4-4", text: "Proofread all content", completed: true },
+        ],
       },
     ],
   },
@@ -89,31 +104,30 @@ const mockColumns = [
       {
         id: "5",
         title: "Project setup and configuration",
+        description: "Configure the initial project structure, CI/CD pipeline, and dependencies.",
         priority: "medium" as const,
         labels: [{ id: "6", name: "Setup", color: "#6b7280" }],
         assignees: [{ id: "7", name: "Tom", avatar: "/diverse-user-avatars.png" }],
-        commentsCount: 1,
-        attachmentsCount: 0,
-        subtasks: { completed: 2, total: 2 },
+        dueDate: "Dec 1",
+        subtasks: [
+          { id: "sub-5-1", text: "Initialize Next.js project", completed: true },
+          { id: "sub-5-2", text: "Set up ESLint and Prettier", completed: true },
+        ],
       },
     ],
   },
 ]
 
 interface KanbanBoardProps {
-  onTaskEdit?: (taskId: string) => void
-  onAddTask?: (columnId: string) => void
+  onTaskView?: (task: any) => void;
+  onTaskEdit?: (task: any) => void;
+  onAddTask?: (columnId: string) => void;
 }
 
-export function KanbanBoard({ onTaskEdit, onAddTask }: KanbanBoardProps) {
+export function KanbanBoard({ onTaskView, onTaskEdit, onAddTask }: KanbanBoardProps) {
   return (
     <div className="h-full overflow-x-auto">
-      <motion.div
-        className="flex gap-6 h-full min-w-max p-6"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
+      <motion.div className="flex gap-6 h-full min-w-max p-6" /* ... */>
         {mockColumns.map((column, index) => (
           <motion.div
             key={column.id}
@@ -121,7 +135,7 @@ export function KanbanBoard({ onTaskEdit, onAddTask }: KanbanBoardProps) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <KanbanColumn column={column} onTaskEdit={onTaskEdit} onAddTask={onAddTask} />
+            <KanbanColumn column={column} onTaskView={onTaskView} onTaskEdit={onTaskEdit} onAddTask={onAddTask} />
           </motion.div>
         ))}
       </motion.div>

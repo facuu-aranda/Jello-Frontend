@@ -13,12 +13,6 @@ interface SettingsLayoutProps {
 
 const settingsNavigation = [
   {
-    name: "Profile",
-    href: "/settings/profile",
-    icon: User,
-    description: "Manage your account and personal information",
-  },
-  {
     name: "Notifications",
     href: "/settings/notifications",
     icon: Bell,

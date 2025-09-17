@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Settings, Users, Filter } from "lucide-react"
+import { ActivityItem } from "@/components/activity/ActivityItem"
 
 const mockProject = {
   id: "1",
@@ -23,15 +24,25 @@ const mockProject = {
   isOwner: true,
 }
 
+const mockProjectActivities = [
+  { id: 1, type: "comment", user: { name: "Sarah", avatar: "/sarah-avatar.png" }, action: "commented on", target: "Update homepage design", time: "2 minutes ago", projectId: 1 },
+  { id: 4, type: "document", user: { name: "You", avatar: "/diverse-user-avatars.png" }, action: "uploaded", target: "API Documentation.pdf", time: "Yesterday", projectId: 1 },
+];
+
 export default function ProjectPage({ params }: { params: { projectId: string } }) {
-  const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(null)
-  const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false)
+  const [selectedTask, setSelectedTask] = React.useState<any | null>(null)
+  const [modalMode, setModalMode] = React.useState<"view" | "edit">("view");
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = React.useState(false)
   const [selectedColumnId, setSelectedColumnId] = React.useState<string | null>(null)
 
-  const handleTaskEdit = (taskId: string) => {
-    setSelectedTaskId(taskId)
-    setIsTaskModalOpen(true)
+  const handleTaskView = (task: any) => {
+    setModalMode("view");
+    setSelectedTask(task);
+  }
+
+  const handleTaskEdit = (task: any) => {
+    setModalMode("edit");
+    setSelectedTask(task);
   }
 
   const handleAddTask = (columnId: string) => {
@@ -39,90 +50,62 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     setIsCreateTaskModalOpen(true)
   }
 
-  const handleCreateTask = (taskData: any) => {
-    console.log("Creating task:", taskData)
-    // Here you would typically call an API to create the task
-  }
-
-  const handleUpdateTask = (taskData: any) => {
-    console.log("Updating task:", taskData)
-    // Here you would typically call an API to update the task
-  }
-
-  const handleDeleteTask = (taskId: string) => {
-    console.log("Deleting task:", taskId)
-    // Here you would typically call an API to delete the task
-  }
+  const handleCreateTask = (taskData: any) => { console.log("Creating task:", taskData) }
+  const handleUpdateTask = (taskData: any) => { console.log("Updating task:", taskData) }
+  const handleDeleteTask = (taskId: string) => { console.log("Deleting task:", taskId) }
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-full">
-        {/* Project Header */}
-        <div className="flex-shrink-0 glass-card p-6 mb-6 rounded-2xl">
-          <div className="flex items-center justify-between">
+      <div className="flex flex-col h-full space-y-6">
+        <div className="flex-shrink-0 glass-card p-6 rounded-2xl">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold text-foreground">{mockProject.name}</h1>
                 {mockProject.isOwner && (
-                  <Badge variant="secondary" className="text-xs">
-                    Owner
-                  </Badge>
+                  <Badge variant="secondary" className="text-xs">Owner</Badge>
                 )}
               </div>
               <p className="text-muted-foreground">{mockProject.description}</p>
             </div>
-
-            <div className="flex items-center gap-3">
-              {/* Members */}
+            <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
                   {mockProject.members.slice(0, 4).map((member) => (
                     <Avatar key={member.id} className="w-8 h-8 border-2 border-background">
-                      <AvatarImage src={member.avatar || "/placeholder.svg"} alt={member.name} />
+                      <AvatarImage src={member.avatar} alt={member.name} />
                       <AvatarFallback className="text-xs">{member.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                   ))}
-                  {mockProject.members.length > 4 && (
-                    <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
-                      <span className="text-xs text-muted-foreground">+{mockProject.members.length - 4}</span>
-                    </div>
-                  )}
                 </div>
-                <Button variant="ghost" size="sm">
-                  <Users className="w-4 h-4 mr-2" />
-                  Invite
-                </Button>
+                <Button variant="ghost" size="sm"><Users className="w-4 h-4 mr-2" />Invite</Button>
               </div>
-
-              {/* Actions */}
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Filter
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
+                <Button variant="outline" size="sm"><Filter className="w-4 h-4 mr-2" />Filter</Button>
+                <Button variant="outline" size="sm"><Settings className="w-4 h-4 mr-2" />Settings</Button>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Kanban Board */}
         <div className="flex-1 overflow-hidden">
-          <KanbanBoard onTaskEdit={handleTaskEdit} onAddTask={handleAddTask} />
+          <KanbanBoard onTaskView={handleTaskView} onTaskEdit={handleTaskEdit} onAddTask={handleAddTask} />
         </div>
-
-        {/* Task Modals */}
+        <div className="flex-shrink-0 px-6">
+          <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
+          <div className="glass-card p-4 rounded-2xl space-y-2">
+            {mockProjectActivities.map((activity, index) => (
+              <ActivityItem key={activity.id} activity={activity} index={index} />
+            ))}
+          </div>
+        </div>
         <TaskModal
-          isOpen={isTaskModalOpen}
-          onClose={() => setIsTaskModalOpen(false)}
-          taskId={selectedTaskId || undefined}
+          isOpen={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+          task={selectedTask}
+          mode={modalMode}
           onSubmit={handleUpdateTask}
           onDelete={handleDeleteTask}
         />
-
         <CreateTaskModal
           isOpen={isCreateTaskModalOpen}
           onClose={() => setIsCreateTaskModalOpen(false)}

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { AppLayout } from "@/components/layout/app-layout"
 import { AssignedTasksWidget } from "@/components/dashboard/assigned-tasks-widget"
 import { PersonalTodoWidget } from "@/components/dashboard/personal-todo-widget"
@@ -8,6 +9,7 @@ import { RecentActivityWidget } from "@/components/dashboard/recent-activity-wid
 import { ProjectCard } from "@/components/project-card"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
+import { TaskModal } from "@/components/tasks/task-modal"
 import { CreateProjectModal } from "@/components/modals/create-project-modal"
 
 const recentProjects = [
@@ -61,13 +63,12 @@ const recentProjects = [
 ]
 
 export default function DashboardPage() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
-  return (
+  const [selectedTask, setSelectedTask] = React.useState<any | null>(null);
 
+  return (
     <>
       <AppLayout>
         <div className="space-y-6 sm:space-y-8">
-          {/* Header - Mobile responsive */}
           <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
             <div className="space-y-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Good morning, John!</h1>
@@ -75,41 +76,40 @@ export default function DashboardPage() {
                 Here's what's happening with your projects today.
               </p>
             </div>
-            <Button className="gap-2 w-full sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
+            <Button className="gap-2 w-full sm:w-auto">
               <Plus className="w-4 h-4" />
               New Project
             </Button>
           </div>
 
-          {/* Widgets Grid - Mobile responsive */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            <AssignedTasksWidget />
+            <AssignedTasksWidget onTaskClick={(task) => setSelectedTask(task)} />
             <PersonalTodoWidget />
             <RecentActivityWidget />
           </div>
-
-          {/* Recent Projects - Mobile responsive */}
+          
           <div className="space-y-4 sm:space-y-6">
-            <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+            <div className="flex items-center justify-between">
               <h2 className="text-lg sm:text-xl font-semibold text-foreground">Recent Projects</h2>
-              <Button variant="ghost" size="sm">
-                View all projects
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/projects">View all projects</Link>
               </Button>
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-              {recentProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
+                {recentProjects.map((project) => (
+                    <ProjectCard key={project.id} project={project} onEdit={() => {}} />
+                ))}
             </div>
           </div>
         </div>
       </AppLayout>
-      <CreateProjectModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={(data) => console.log("Creating project:", data)}
+
+      <TaskModal
+        isOpen={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
+        task={selectedTask}
+        showGoToProjectButton={true}
       />
     </>
-  )
+  )
 }

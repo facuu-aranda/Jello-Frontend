@@ -3,7 +3,7 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { AnimatePresence, motion } from "framer-motion"
-import { Home, FolderKanban, CheckSquare, Search, Plus, ChevronsLeft, Bell } from "lucide-react"
+import { Home, FolderKanban, CheckSquare, Search, Plus, ChevronsLeft, Bell, ClipboardList } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -19,6 +19,7 @@ const navigation = [
   { name: "Search", href: "/search", icon: Search },
   { name: "Projects", href: "/projects", icon: FolderKanban },
   { name: "My Tasks", href: "/tasks", icon: CheckSquare },
+  { name: "Todos", href: "/todos", icon: ClipboardList },
 ]
 const projects = [
   { id: 1, name: "Website Redesign", color: "bg-chart-1" },

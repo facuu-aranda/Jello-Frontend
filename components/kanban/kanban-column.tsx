@@ -8,28 +8,13 @@ import { TaskCard } from "@/components/tasks/task-card"
 import { cn } from "@/lib/utils"
 
 interface KanbanColumnProps {
-  column: {
-    id: string
-    title: string
-    color: string
-    tasks: Array<{
-      id: string
-      title: string
-      description?: string
-      priority: "low" | "medium" | "high" | "critical"
-      labels: Array<{ id: string; name: string; color: string }>
-      assignees: Array<{ id: string; name: string; avatar?: string }>
-      dueDate?: string
-      commentsCount: number
-      attachmentsCount: number
-      subtasks: { completed: number; total: number }
-    }>
-  }
-  onTaskEdit?: (taskId: string) => void
-  onAddTask?: (columnId: string) => void
+  column: any;
+  onTaskView?: (task: any) => void;
+  onTaskEdit?: (task: any) => void;
+  onAddTask?: (columnId: string) => void;
 }
 
-export function KanbanColumn({ column, onTaskEdit, onAddTask }: KanbanColumnProps) {
+export function KanbanColumn({ column, onTaskView, onTaskEdit, onAddTask }: KanbanColumnProps) {
   return (
     <motion.div
       className="flex flex-col w-80 h-full"
@@ -71,14 +56,9 @@ export function KanbanColumn({ column, onTaskEdit, onAddTask }: KanbanColumnProp
 
       {/* Tasks List */}
       <div className="flex-1 space-y-3 overflow-y-auto">
-        {column.tasks.map((task, index) => (
-          <motion.div
-            key={task.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <TaskCard task={task} onEdit={() => onTaskEdit?.(task.id)} />
+        {column.tasks.map((task: any, index: number) => (
+          <motion.div key={task.id} /* ... */>
+            <TaskCard task={task} onView={() => onTaskView?.(task)} onEdit={() => onTaskEdit?.(task)} />
           </motion.div>
         ))}
 
