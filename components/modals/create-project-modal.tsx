@@ -1,231 +1,109 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
-import { X, Users, Calendar, Palette } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal"
-import { DatePicker } from "@/components/ui/date-picker"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { CalendarIcon } from "lucide-react"
+import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import { useIsMobile } from "@/hooks/use-mobile"
+import { MemberSelector } from "@/components/forms/member-selector"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { ImageUploadField } from "@/components/forms/image-upload-field"
 
 interface CreateProjectModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSubmit: (projectData: any) => void
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: any) => void;
 }
 
 const projectColors = [
-  { id: "bg-primary", name: "Jello Blue", color: "#00a3e0" },
-  { id: "bg-accent-pink", name: "Pink", color: "#ec4899" },
-  { id: "bg-accent-purple", name: "Purple", color: "#8b5cf6" },
-  { id: "bg-accent-teal", name: "Teal", color: "#14b8a6" },
-  { id: "bg-accent", name: "Coral", color: "#ff6f61" },
-]
-
-const mockTeamMembers = [
-  { id: "1", name: "Sarah Johnson", email: "sarah@example.com", avatar: "/sarah-avatar.png" },
-  { id: "2", name: "Mike Chen", email: "mike@example.com", avatar: "/mike-avatar.jpg" },
-  { id: "3", name: "Alex Rivera", email: "alex@example.com", avatar: "/diverse-user-avatars.png" },
-  { id: "4", name: "Emma Davis", email: "emma@example.com", avatar: "/diverse-user-avatars.png" },
-]
+    { id: 'bg-accent-pink', class: 'bg-accent-pink', selectedClass: 'ring-accent-pink' },
+    { id: 'bg-accent-purple', class: 'bg-accent-purple', selectedClass: 'ring-accent-purple' },
+    { id: 'bg-accent-teal', class: 'bg-accent-teal', selectedClass: 'ring-accent-teal' },
+    { id: 'bg-primary', class: 'bg-primary', selectedClass: 'ring-primary' },
+];
 
 export function CreateProjectModal({ isOpen, onClose, onSubmit }: CreateProjectModalProps) {
-  const isMobile = useIsMobile()
-  const [formData, setFormData] = React.useState({
-    name: "",
-    description: "",
-    color: "bg-primary",
-    dueDate: "",
-    members: [] as string[],
-  })
-  const [errors, setErrors] = React.useState<Record<string, string>>({})
+  const [name, setName] = React.useState("")
+  const [description, setDescription] = React.useState("")
+  const [color, setColor] = React.useState(projectColors[0].id)
+  const [dueDate, setDueDate] = React.useState<Date | undefined>(undefined)
+  const [members, setMembers] = React.useState<string[]>([])
+  const [projectImage, setProjectImage] = React.useState<File | null>(null)
+  const [bannerImage, setBannerImage] = React.useState<File | null>(null)
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Project name is required"
-    }
-    if (!formData.description.trim()) {
-      newErrors.description = "Project description is required"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+  const handleSubmit = () => {
+    onSubmit({ name, description, color, dueDate, members, projectImage, bannerImage });
+    onClose();
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (validateForm()) {
-      onSubmit(formData)
-      // Reset form
-      setFormData({
-        name: "",
-        description: "",
-        color: "bg-primary",
-        dueDate: "",
-        members: [],
-      })
-      setErrors({})
-      onClose()
-    }
-  }
-
-  const toggleMember = (memberId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      members: prev.members.includes(memberId)
-        ? prev.members.filter((id) => id !== memberId)
-        : [...prev.members, memberId],
-    }))
-  }
+  const FormContent = (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">Project Name</Label>
+        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Q4 Marketing Campaign" />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="description">Description</Label>
+        <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Add a short description..." />
+      </div>
+      <ImageUploadField label="Project Image" name="projectImage" onChange={setProjectImage} />
+      <ImageUploadField label="Project Banner" name="bannerImage" onChange={setBannerImage} />
+      <div className="space-y-2">
+        <Label>Project Color</Label>
+        <div className="flex gap-3">
+          {projectColors.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className={cn("w-8 h-8 rounded-full transition-transform hover:scale-110", c.class, color === c.id && `ring-2 ${c.selectedClass} ring-offset-2 ring-offset-background`)}
+              onClick={() => setColor(c.id)}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Due Date (Optional)</Label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !dueDate && "text-muted-foreground")}>
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus /></PopoverContent>
+        </Popover>
+      </div>
+      <div className="space-y-2">
+        <Label>Team Members</Label>
+        <MemberSelector selectedMembers={members} onSelectMembers={setMembers} />
+      </div>
+    </div>
+  );
 
   return (
-    <Modal open={isOpen} onOpenChange={onClose}>
-      <ModalContent className={cn("max-h-[95vh] overflow-hidden", isMobile ? "max-w-[95vw] mx-2" : "max-w-2xl")}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
-          <ModalHeader className="border-b border-border pb-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg sm:text-xl font-semibold text-foreground">Create New Project</h2>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] flex flex-col p-0 glass-card">
+        <DialogHeader className="p-6 pb-4 border-b border-border/50 flex-shrink-0">
+          <DialogTitle>Create New Project</DialogTitle>
+          <DialogDescription>Fill in the details to start your new project.</DialogDescription>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="p-6">
+                {FormContent}
             </div>
-          </ModalHeader>
+        </div>
 
-          <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(95vh-120px)]">
-            <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-              {/* Project Name */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Project Name *</label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter project name..."
-                  className={errors.name ? "border-destructive" : ""}
-                />
-                {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
-              </div>
-
-              {/* Project Description */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Description *</label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe your project..."
-                  className={cn("min-h-[80px] sm:min-h-[100px]", errors.description ? "border-destructive" : "")}
-                />
-                {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
-              </div>
-
-              {/* Project Color */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Palette className="w-4 h-4" />
-                  Project Color
-                </label>
-                <div className="flex flex-wrap gap-2 sm:gap-3">
-                  {projectColors.map((color) => (
-                    <motion.button
-                      key={color.id}
-                      type="button"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setFormData((prev) => ({ ...prev, color: color.id }))}
-                      className={cn(
-                        "relative p-1 rounded-xl border-2 transition-all",
-                        formData.color === color.id ? "border-primary" : "border-border",
-                      )}
-                    >
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg" style={{ backgroundColor: color.color }} />
-                      {formData.color === color.id && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-background rounded-full border border-foreground" />
-                        </div>
-                      )}
-                    </motion.button>
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Selected: {projectColors.find((c) => c.id === formData.color)?.name}
-                </p>
-              </div>
-
-              {/* Due Date */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Due Date (Optional)
-                </label>
-                <DatePicker
-                  value={formData.dueDate}
-                  onChange={(date) => setFormData((prev) => ({ ...prev, dueDate: date }))}
-                  placeholder="Select due date..."
-                />
-              </div>
-
-              {/* Team Members */}
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Team Members
-                </label>
-                <div className="space-y-2 max-h-40 sm:max-h-48 overflow-y-auto">
-                  {mockTeamMembers.map((member) => (
-                    <motion.div
-                      key={member.id}
-                      className={cn(
-                        "flex items-center gap-3 p-2 sm:p-3 rounded-xl border-2 cursor-pointer transition-all",
-                        formData.members.includes(member.id)
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:bg-muted",
-                      )}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => toggleMember(member.id)}
-                    >
-                      <Avatar className="w-6 h-6 sm:w-8 sm:h-8">
-                        <AvatarImage src={member.avatar || "/placeholder.svg"} alt={member.name} />
-                        <AvatarFallback className="text-xs">{member.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground text-sm sm:text-base truncate">{member.name}</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{member.email}</p>
-                      </div>
-                      {formData.members.includes(member.id) && (
-                        <Badge variant="secondary" className="text-xs">
-                          Selected
-                        </Badge>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-                {formData.members.length > 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    {formData.members.length} member{formData.members.length !== 1 ? "s" : ""} selected
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3 p-4 sm:p-6 pt-4 border-t border-border">
-              <Button type="submit" className="w-full sm:flex-1">
-                Create Project
-              </Button>
-              <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto bg-transparent">
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </motion.div>
-      </ModalContent>
-    </Modal>
+        <DialogFooter className="p-4 border-t border-border/50 flex-shrink-0">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSubmit}>Create Project</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
