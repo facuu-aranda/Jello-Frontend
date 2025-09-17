@@ -2,7 +2,7 @@ import "./globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { GeistSans } from "geist/font/sans"
-import { ThemeProvider } from "@/contexts/theme-context" // Importamos nuestro proveedor principal
+import { ThemeProvider } from "@/contexts/theme-context"
 import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
@@ -10,6 +10,13 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 export const metadata: Metadata = {
   title: "Jello",
   description: "Your intelligent productivity ecosystem",
+  icons: {
+    icon: [
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export default function RootLayout({
@@ -20,7 +27,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${GeistSans.variable} ${inter.variable} font-sans`}>
-        {/* Nuestro ThemeProvider ahora gestiona todo */}
         <ThemeProvider>
           {children}
           <Toaster />
