@@ -1,148 +1,98 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
+import { motion } from "framer-motion"
+import { Users, Calendar, CheckCircle, Edit, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-// import { Calendar } from "@/components/ui/calendar" // Temporalmente no se usa
-// import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover" // Temporalmente no se usa
-import { CalendarIcon, Trash2 } from "lucide-react"
-// import { format } from "date-fns" // Temporalmente no se usa
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-// import { MemberSelector } from "@/components/forms/member-selector" // Temporalmente no se usa
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
-// import { ImageUploadField } from "@/components/forms/image-upload-field" // Temporalmente no se usa
 
-// Definimos una interfaz clara para los datos del proyecto
-interface ProjectData {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-  dueDate?: string;
-  members: string[];
-  projectImageUrl?: string;
-  bannerImageUrl?: string;
-  isOwner: boolean;
+interface ProjectCardProps {
+  project: any;
+  onEdit: () => void;
 }
 
-interface EditProjectModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: any) => void;
-  onDelete: (id: string) => void;
-  project: ProjectData | null;
-}
-
-const projectColors = [
-    { id: 'bg-accent-pink', class: 'bg-accent-pink', selectedClass: 'ring-accent-pink' },
-    { id: 'bg-accent-purple', class: 'bg-accent-purple', selectedClass: 'ring-accent-purple' },
-    { id: 'bg-accent-teal', class: 'bg-accent-teal', selectedClass: 'ring-accent-teal' },
-    { id: 'bg-primary', class: 'bg-primary', selectedClass: 'ring-primary' },
-];
-
-export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project }: EditProjectModalProps) {
-  const [formData, setFormData] = React.useState<ProjectData | null>(project)
-
-  React.useEffect(() => {
-    if (isOpen && project) {
-      setFormData(project);
-    }
-  }, [isOpen, project?.id]);
-
-  if (!formData) return null;
-
-  const handleChange = (field: string, value: any) => {
-    setFormData(prev => prev ? { ...prev, [field]: value } : null);
-  };
-
-  const handleSubmit = () => {
-    if (formData) {
-      onSubmit(formData);
-      onClose();
-    }
-  };
+export function ProjectCard({ project, onEdit }: ProjectCardProps) {
   
-  const handleDelete = () => {
-    if (formData) {
-      onDelete(formData.id);
-      onClose();
-    }
+  const handleActionClick = (e: React.MouseEvent, action: () => void) => {
+    e.preventDefault(); // Previene la navegación del Link
+    e.stopPropagation(); // Detiene cualquier otro evento
+    action();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] flex flex-col p-0 glass-card">
-        <DialogHeader className="p-6 pb-4 border-b border-border/50 flex-shrink-0">
-          <div className="flex justify-between items-center">
-            <DialogTitle>Edit Project</DialogTitle>
-            {formData.isOwner && (
-                <Button variant="ghost" size="icon" onClick={handleDelete} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                    <Trash2 className="w-4 h-4" />
-                </Button>
-            )}
-          </div>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="p-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Project Name</Label>
-                <Input id="name" value={formData.name} onChange={(e) => handleChange('name', e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" value={formData.description} onChange={(e) => handleChange('description', e.target.value)} />
-              </div>
-
-              {/* --- PRUEBA: COMPONENTES COMPLEJOS DESACTIVADOS --- */}
-              {/* <ImageUploadField label="Project Image" name="projectImage" onChange={(file) => handleChange('projectImageFile', file)} currentImageUrl={formData.projectImageUrl} />
-              <ImageUploadField label="Project Banner" name="bannerImage" onChange={(file) => handleChange('bannerImageFile', file)} currentImageUrl={formData.bannerImageUrl} />
-              */}
-              
-              <div className="space-y-2">
-                <Label>Project Color</Label>
-                <div className="flex gap-3">
-                  {projectColors.map((c) => (
-                    <button
-                      key={c.id} type="button"
-                      className={cn("w-8 h-8 rounded-full transition-transform hover:scale-110", c.class, formData.color === c.id && `ring-2 ${c.selectedClass} ring-offset-2 ring-offset-background`)}
-                      onClick={() => handleChange('color', c.id)}
-                    />
-                  ))}
+    <TooltipProvider delayDuration={0}>
+      <motion.div
+        className="group relative" // Añadimos 'relative' para posicionar los botones
+        whileHover={{ scale: 1.02}}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1}}
+      >
+        <Link href={`/project/${project.id}`} className="block">
+          <div className="glass-card p-6 space-y-4 hover:shadow-xl transition-all duration-300 flex flex-col h-full">
+            <div className="flex-grow space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={cn("w-4 h-4 rounded-full", project.color)} />
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-foreground">{project.name}</h3>
+                    {project.isOwner && (
+                      <Badge variant="secondary" className="text-xs">Owner</Badge>
+                    )}
+                  </div>
                 </div>
               </div>
-              
-              {/*
+              <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
               <div className="space-y-2">
-                <Label>Due Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !formData.dueDate && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.dueDate ? format(new Date(formData.dueDate), "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.dueDate ? new Date(formData.dueDate) : undefined} onSelect={(date) => handleChange('dueDate', date?.toISOString())} initialFocus /></PopoverContent>
-                </Popover>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Progress</span>
+                  <span className="font-medium">{project.progress}%</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <motion.div
+                    className={cn("h-2 rounded-full", project.color)}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${project.progress}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                  />
+                </div>
               </div>
-              */}
-
-              {/*
-              <div className="space-y-2">
-                <Label>Team Members</Label>
-                <MemberSelector selectedMembers={formData.members} onSelectMembers={(ids) => handleChange('members', ids)} />
-              </div>
-              */}
             </div>
+            <div className="flex-shrink-0 pt-4 border-t border-border/50">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1"><CheckCircle className="w-4 h-4" /><span>{project.completedTasks}/{project.totalTasks}</span></div>
+                  {project.dueDate && <div className="flex items-center gap-1"><Calendar className="w-4 h-4" /><span>{project.dueDate}</span></div>}
+                </div>
+                <div className="flex items-center gap-1"><Users className="w-4 h-4" /><span>{project.members.length}</span></div>
+              </div>
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex -space-x-2">
+                  {project.members.slice(0, 4).map((member: any) => (
+                    <Avatar key={member.id} className="w-6 h-6 border-2 border-background"><AvatarImage src={member.avatar} alt={member.name} /><AvatarFallback className="text-xs">{member.name.charAt(0)}</AvatarFallback></Avatar>
+                  ))}
+                  {project.members.length > 4 && <div className="w-6 h-6 rounded-full bg-muted border-2 border-background flex items-center justify-center"><span className="text-xs text-muted-foreground">+{project.members.length - 4}</span></div>}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Link>
+        
+        {/* 👇 --- BOTONES DE ACCIÓN VISIBLES AL PASAR EL RATÓN --- 👇 */}
+        <div className="absolute top-4 right-4 flex items-center gap-1 ">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 bg-background/50 hover:bg-background/80" onClick={(e) => handleActionClick(e, onEdit)}>
+                <Edit className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit project</TooltipContent>
+          </Tooltip>
         </div>
-
-        <DialogFooter className="p-4 border-t border-border/50 flex-shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit}>Save Changes</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </motion.div>
+    </TooltipProvider>
   )
 }

@@ -21,9 +21,30 @@ const navigation = [
   { name: "My Tasks", href: "/tasks", icon: CheckSquare },
 ]
 const projects = [
-  { id: 1, name: "Website Redesign", color: "bg-accent-pink" },
-  { id: 2, name: "Mobile App", color: "bg-accent-purple" },
-]
+  { id: 1, name: "Website Redesign", color: "bg-chart-1" },
+  { id: 2, name: "Mobile App", color: "bg-chart-2" },
+  { id: 3, name: "Marketing Campaign Q4", color: "bg-chart-3" },
+  { id: 4, name: "Data Analysis Dashboard", color: "bg-chart-2" },
+  { id: 5, name: "API Integration with Stripe", color: "bg-chart-5" },
+  { id: 6, name: "E-commerce Platform Launch", color: "bg-chart-1" },
+  { id: 7, name: "Content Strategy Plan", color: "bg-chart-2" },
+  { id: 8, name: "New HR Onboarding System", color: "bg-chart-3" },
+  { id: 9, name: "Customer Support Chatbot", color: "bg-chart-2" },
+  { id: 10, name: "Server Infrastructure Upgrade", color: "bg-chart-5" },
+  { id: 11, name: "UX/UI Research Phase", color: "bg-chart-1" },
+  { id: 12, name: "Internal Company Wiki", color: "bg-chart-2" },
+  { id: 13, name: "Q3 Financial Reporting", color: "bg-chart-3" },
+  { id: 14, name: "Cloud Migration to AWS", color: "bg-chart-2" },
+  { id: 15, name: "Mobile App v2.0 Features", color: "bg-chart-5" },
+  { id: 16, name: "Blog Content Calendar", color: "bg-chart-1" },
+  { id: 17, name: "A/B Testing Implementation", color: "bg-chart-2" },
+  { id: 18, name: "Security Audit & Hardening", color: "bg-chart-3" },
+  { id: 19, name: "Employee Review Tool", color: "bg-chart-2" },
+  { id: 20, name: "Social Media Strategy", color: "bg-chart-5" },
+  { id: 21, name: "Inventory Management System", color: "bg-chart-1" },
+  { id: 22, name: "Customer Feedback Portal", color: "bg-chart-2" },
+  { id: 23, name: "Annual Sales Report", color: "bg-chart-3" },
+];
 
 interface SidebarProps {
   isCollapsed: boolean

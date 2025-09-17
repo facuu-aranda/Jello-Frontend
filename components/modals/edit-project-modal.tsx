@@ -14,27 +14,15 @@ import { MemberSelector } from "@/components/forms/member-selector"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { ImageUploadField } from "@/components/forms/image-upload-field"
 
-// Definimos una interfaz clara para los datos del proyecto
 interface ProjectData {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-  dueDate?: string;
-  members: string[];
-  projectImageUrl?: string;
-  bannerImageUrl?: string;
-  isOwner: boolean;
+  id: string; name: string; description: string; color: string;
+  dueDate?: string; members: string[]; projectImageUrl?: string; bannerImageUrl?: string; isOwner: boolean;
 }
-
 interface EditProjectModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: any) => void;
-  onDelete: (id: string) => void;
+  isOpen: boolean; onClose: () => void;
+  onSubmit: (data: any) => void; onDelete: (id: string) => void;
   project: ProjectData | null;
 }
-
 const projectColors = [
     { id: 'bg-accent-pink', class: 'bg-accent-pink', selectedClass: 'ring-accent-pink' },
     { id: 'bg-accent-purple', class: 'bg-accent-purple', selectedClass: 'ring-accent-purple' },
@@ -43,15 +31,13 @@ const projectColors = [
 ];
 
 export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project }: EditProjectModalProps) {
-  const [formData, setFormData] = React.useState<ProjectData | null>(project)
+  const [formData, setFormData] = React.useState<ProjectData | null>(project);
 
-  // ESTE ES EL CAMBIO CLAVE PARA EVITAR EL CONGELAMIENTO
-  // Sincroniza el estado del formulario solo una vez cuando el modal se abre con un proyecto.
   React.useEffect(() => {
-    if (isOpen && project) {
+    if (project) {
       setFormData(project);
     }
-  }, [isOpen, project]);
+  }, [project]);
 
   if (!formData) return null;
 
@@ -86,7 +72,6 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project 
             )}
           </div>
         </DialogHeader>
-
         <div className="flex-1 overflow-y-auto min-h-0">
             <div className="p-6 space-y-4">
               <div className="space-y-2">
@@ -129,7 +114,6 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project 
               </div>
             </div>
         </div>
-
         <DialogFooter className="p-4 border-t border-border/50 flex-shrink-0">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleSubmit}>Save Changes</Button>
