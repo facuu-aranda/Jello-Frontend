@@ -7,17 +7,46 @@ import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useAuth } from "@/contexts/AuthContext" 
 
 export function RegisterForm() {
+  // --- 2. Estados para manejar los inputs, la carga y los mensajes ---
+  const [name, setName] = React.useState("")
+  const [email, setEmail] = React.useState("")
+  const [password, setPassword] = React.useState("")
   const [showPassword, setShowPassword] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null)
 
+  // --- 3. Obtenemos la función `register` del contexto ---
+  const { register } = useAuth()
+
+  // --- 4. Lógica para manejar el envío del formulario de registro ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate registration
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsLoading(false)
+    setError(null)
+    setSuccessMessage(null)
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long.")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      await register(name, email, password)
+      setSuccessMessage("Account created successfully! You can now sign in.")
+      // Limpiamos el formulario
+      setName("")
+      setEmail("")
+      setPassword("")
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred during registration.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -27,21 +56,31 @@ export function RegisterForm() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
     >
-      {/* Header */}
+      {/* Header (sin cambios) */}
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-bold text-foreground">Create your account</h1>
         <p className="text-muted-foreground">Start your productivity journey with Jello</p>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <Input label="First name" placeholder="John" required />
-          <Input label="Last name" placeholder="Doe" required />
-        </div>
-
-        <Input label="Email" type="email" placeholder="john@example.com" required />
-
+        {/* El input de nombre ahora está dividido en uno solo para "Full Name" */}
+        <Input
+          label="Full name"
+          placeholder="John Doe"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          disabled={isLoading}
+        />
+        <Input
+          label="Email"
+          type="email"
+          placeholder="john@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          disabled={isLoading}
+        />
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">Password</label>
           <div className="relative">
@@ -49,7 +88,10 @@ export function RegisterForm() {
               type={showPassword ? "text" : "password"}
               placeholder="Create a strong password"
               className="pr-10"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={isLoading}
             />
             <Button
               type="button"
@@ -63,9 +105,8 @@ export function RegisterForm() {
           </div>
           <p className="text-xs text-muted-foreground">Must be at least 8 characters long</p>
         </div>
-
         <div className="flex items-start space-x-2">
-          <Checkbox id="terms" className="mt-1" />
+          <Checkbox id="terms" required disabled={isLoading} />
           <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
             I agree to the{" "}
             <Link href="/terms" className="text-primary hover:underline">
@@ -78,8 +119,12 @@ export function RegisterForm() {
           </label>
         </div>
 
+        {/* Mostramos mensajes de éxito o error */}
+        {error && <p className="text-sm text-destructive text-center">{error}</p>}
+        {successMessage && <p className="text-sm text-green-500 text-center">{successMessage}</p>}
+
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Creating account..." : "Create account"}
+          {isLoading ? "Creating account..." : "Create Account"}
         </Button>
       </form>
 
