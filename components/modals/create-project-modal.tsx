@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { MemberSelector } from "@/components/forms/member-selector"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
@@ -19,7 +17,7 @@ import { Project } from "@/lib/api/types"
 interface CreateProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onProjectCreated: (newProject: Project) => void;
+  onSubmit: (newProject: Project) => void;
 }
 
 const projectColors = [
@@ -29,10 +27,9 @@ const projectColors = [
   { id: 'bg-primary', class: 'bg-primary', selectedClass: 'ring-primary' },
 ];
 
-export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: CreateProjectModalProps) {
+export function CreateProjectModal({ isOpen, onClose, onSubmit: onProjectCreated }: CreateProjectModalProps) {
   const { token } = useAuth();
 
-  // Estados para el formulario y la UI
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [color, setColor] = React.useState(projectColors[0].id);
@@ -40,7 +37,6 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
   const [members, setMembers] = React.useState<string[]>([]);
   const [projectImage, setProjectImage] = React.useState<File | null>(null);
   const [bannerImage, setBannerImage] = React.useState<File | null>(null);
-
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -55,6 +51,16 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
     setError(null);
   }
 
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  }
+  
+  // Función manejadora para actualizar el estado de los miembros seleccionados
+  const handleMemberSelection = (selectedIds: string[]) => {
+      setMembers(selectedIds);
+  };
+
   const handleSubmit = async () => {
     if (!name.trim()) {
       setError("Project name is required.");
@@ -68,7 +74,6 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
       let projectImageUrl: string | undefined = undefined;
       let bannerImageUrl: string | undefined = undefined;
 
-      // 1. Subir imágenes si existen
       if (projectImage) {
         const res = await api.upload(projectImage, token);
         projectImageUrl = res.url;
@@ -78,21 +83,18 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
         bannerImageUrl = res.url;
       }
 
-      // 2. Preparar el payload para crear el proyecto
       const projectData = {
         name,
         description,
         color,
         dueDate: dueDate?.toISOString(),
-        members, // La API debería manejar la invitación a estos IDs
+        members,
         avatarUrl: projectImageUrl,
         bannerUrl: bannerImageUrl,
       };
 
-      // 3. Llamar a la API para crear el proyecto
       const newProject = await api.post('/projects', projectData, token);
 
-      // 4. Notificar al componente padre y cerrar
       onProjectCreated(newProject);
       handleClose();
 
@@ -101,11 +103,6 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
     } finally {
       setIsLoading(false);
     }
-  }
-
-  const handleClose = () => {
-    resetForm();
-    onClose();
   }
 
   return (
@@ -148,7 +145,7 @@ export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: Create
             </div>
             <div className="space-y-2">
               <Label>Team Members</Label>
-              <MemberSelector selectedMembers={members} onSelectMembers={setMembers} />
+              <MemberSelector selectedMembers={members} onSelectMembers={handleMemberSelection} />
             </div>
             {error && <p className="text-sm text-center text-destructive">{error}</p>}
           </div>
