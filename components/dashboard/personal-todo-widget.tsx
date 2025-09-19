@@ -6,34 +6,38 @@ import { Plus, Check, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Todo } from "@/lib/api/types"
 
-export function PersonalTodoWidget() {
-  const [todos, setTodos] = React.useState([
-    { id: 1, text: "Review quarterly goals", completed: false },
-    { id: 2, text: "Schedule dentist appointment", completed: true },
-    { id: 3, text: "Buy groceries for the week", completed: false },
-  ]);
+interface PersonalTodoWidgetProps {
+  initialTodos: Todo[];
+}
+
+export function PersonalTodoWidget({ initialTodos }: PersonalTodoWidgetProps) {
+  const [todos, setTodos] = React.useState<Todo[]>(initialTodos);
   const [newTodo, setNewTodo] = React.useState("")
   const [isAdding, setIsAdding] = React.useState(false)
   const [isManaging, setIsManaging] = React.useState(false)
-  const toggleTodo = (id: number) => {
+
+   const toggleTodo = (id: string) => {
     setTodos(todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)))
   }
 
   const addTodo = () => {
     if (newTodo.trim()) {
-      setTodos([...todos, { id: Date.now(), text: newTodo.trim(), completed: false }])
+      const newTodoItem: Todo = { id: Date.now().toString(), text: newTodo.trim(), completed: false };
+      setTodos([newTodoItem, ...todos]);
       setNewTodo("")
       setIsAdding(false)
     }
   }
-  const deleteTodo = (id: number) => {
+  const deleteTodo = (id: string) => {
     setTodos(todos.filter(todo => todo.id !== id));
   }
 
   const completedCount = todos.filter((todo) => todo.completed).length
 
   return (
+
     <motion.div
       className="glass-card p-6 space-y-6"
       initial={{ opacity: 0, y: 20 }}
@@ -67,8 +71,8 @@ export function PersonalTodoWidget() {
 
       {/* Todo List */}
       <div className="space-y-3">
-        <AnimatePresence>
-          {todos.map((todo, index) => (
+         <AnimatePresence>
+          {todos.slice(0, 3).map((todo, index) => (
             <motion.div key={todo.id} className="flex items-center gap-3 p-2 rounded-lg" /* ... */>
               <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
               <span className={`flex-1 text-sm ${todo.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>

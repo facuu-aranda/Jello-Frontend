@@ -5,57 +5,95 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CalendarIcon, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { MemberSelector } from "@/components/forms/member-selector"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog"
 import { ImageUploadField } from "@/components/forms/image-upload-field"
+import { DatePicker } from "../ui/date-picker"
+import { useAuth } from "@/contexts/AuthContext"
+import { api } from "@/lib/api/client"
+import { Project } from "@/lib/api/types"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog"
 
-interface ProjectData {
-  id: string; name: string; description: string; color: string;
-  dueDate?: string; members: string[]; projectImageUrl?: string; bannerImageUrl?: string; isOwner: boolean;
-}
 interface EditProjectModalProps {
-  isOpen: boolean; onClose: () => void;
-  onSubmit: (data: any) => void; onDelete: (id: string) => void;
-  project: ProjectData | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onProjectUpdated: (updatedProject: Project) => void;
+  onProjectDeleted: (projectId: string) => void;
+  project: Project | null;
 }
+
 const projectColors = [
-    { id: 'bg-accent-pink', class: 'bg-accent-pink', selectedClass: 'ring-accent-pink' },
-    { id: 'bg-accent-purple', class: 'bg-accent-purple', selectedClass: 'ring-accent-purple' },
-    { id: 'bg-accent-teal', class: 'bg-accent-teal', selectedClass: 'ring-accent-teal' },
-    { id: 'bg-primary', class: 'bg-primary', selectedClass: 'ring-primary' },
+  { id: 'bg-accent-pink', class: 'bg-accent-pink', selectedClass: 'ring-accent-pink' },
+  { id: 'bg-accent-purple', class: 'bg-accent-purple', selectedClass: 'ring-accent-purple' },
+  { id: 'bg-accent-teal', class: 'bg-accent-teal', selectedClass: 'ring-accent-teal' },
+  { id: 'bg-primary', class: 'bg-primary', selectedClass: 'ring-primary' },
 ];
 
-export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project }: EditProjectModalProps) {
-  const [formData, setFormData] = React.useState<ProjectData | null>(project);
+export function EditProjectModal({ isOpen, onClose, onProjectUpdated, onProjectDeleted, project }: EditProjectModalProps) {
+  const { token } = useAuth();
+  const [formData, setFormData] = React.useState<Project | null>(project);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    if (project) {
-      setFormData(project);
-    }
+    if (project) setFormData(project);
   }, [project]);
 
   if (!formData) return null;
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: keyof Project, value: any) => {
     setFormData(prev => prev ? { ...prev, [field]: value } : null);
   };
 
-  const handleSubmit = () => {
-    if (formData) {
-      onSubmit(formData);
+  const handleFileChange = (field: 'avatarUrl' | 'bannerUrl', file: File | null) => {
+    // Para manejar la subida de archivos, guardamos el objeto File
+    setFormData(prev => prev ? { ...prev, [field]: file } : null);
+  }
+
+  const handleSubmit = async () => {
+    if (!formData.name.trim()) {
+      setError("Project name is required.");
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const updatePayload: Partial<Project> = { ...formData };
+
+      // Subir nuevas imágenes si son objetos File
+      if (updatePayload.avatarUrl && typeof updatePayload.avatarUrl !== 'string') {
+        const res = await api.upload(updatePayload.avatarUrl as File, token);
+        updatePayload.avatarUrl = res.url;
+      }
+      if (updatePayload.bannerUrl && typeof updatePayload.bannerUrl !== 'string') {
+        const res = await api.upload(updatePayload.bannerUrl as File, token);
+        updatePayload.bannerUrl = res.url;
+      }
+
+      const updatedProject = await api.put(`/projects/${formData.id}`, updatePayload, token);
+      onProjectUpdated(updatedProject);
       onClose();
+    } catch (err: any) {
+      setError(err.message || "Failed to update project.");
+    } finally {
+      setIsLoading(false);
     }
   };
-  
-  const handleDelete = () => {
-    if (formData) {
-      onDelete(formData.id);
+
+  const handleDelete = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.delete(`/projects/${formData.id}`, token);
+      onProjectDeleted(formData.id);
       onClose();
+    } catch (err: any) {
+      setError(err.message || "Failed to delete project.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -66,57 +104,70 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project 
           <div className="flex justify-between items-center">
             <DialogTitle>Edit Project</DialogTitle>
             {formData.isOwner && (
-                <Button variant="ghost" size="icon" onClick={handleDelete} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
                     <Trash2 className="w-4 h-4" />
-                </Button>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete the project and all of its data.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
         </DialogHeader>
         <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="p-6 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Project Name</Label>
-                <Input id="name" value={formData.name} onChange={(e) => handleChange('name', e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" value={formData.description} onChange={(e) => handleChange('description', e.target.value)} />
-              </div>
-              <ImageUploadField label="Project Image" name="projectImage" onChange={(file) => handleChange('projectImageFile', file)} currentImageUrl={formData.projectImageUrl} />
-              <ImageUploadField label="Project Banner" name="bannerImage" onChange={(file) => handleChange('bannerImageFile', file)} currentImageUrl={formData.bannerImageUrl} />
-              <div className="space-y-2">
-                <Label>Project Color</Label>
-                <div className="flex gap-3">
-                  {projectColors.map((c) => (
-                    <button
-                      key={c.id} type="button"
-                      className={cn("w-8 h-8 rounded-full transition-transform hover:scale-110", c.class, formData.color === c.id && `ring-2 ${c.selectedClass} ring-offset-2 ring-offset-background`)}
-                      onClick={() => handleChange('color', c.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Due Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !formData.dueDate && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.dueDate ? format(new Date(formData.dueDate), "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.dueDate ? new Date(formData.dueDate) : undefined} onSelect={(date) => handleChange('dueDate', date?.toISOString())} initialFocus /></PopoverContent>
-                </Popover>
-              </div>
-              <div className="space-y-2">
-                <Label>Team Members</Label>
-                <MemberSelector selectedMembers={formData.members} onSelectMembers={(ids) => handleChange('members', ids)} />
+          <div className="p-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Project Name</Label>
+              <Input id="name" value={formData.name} onChange={(e) => handleChange('name', e.target.value)} disabled={isLoading} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" value={formData.description} onChange={(e) => handleChange('description', e.target.value)} disabled={isLoading} />
+            </div>
+            <ImageUploadField label="Project Image" name="projectImage" onChange={(file) => handleFileChange('avatarUrl', file)} currentImageUrl={typeof formData.avatarUrl === 'string' ? formData.avatarUrl : undefined} />
+            <ImageUploadField label="Project Banner" name="bannerImage" onChange={(file) => handleFileChange('bannerUrl', file)} currentImageUrl={typeof formData.bannerUrl === 'string' ? formData.bannerUrl : undefined} />
+            <div className="space-y-2">
+              <Label>Project Color</Label>
+              <div className="flex gap-3">
+                {projectColors.map((c) => (
+                  <button
+                    key={c.id} type="button"
+                    className={cn("w-8 h-8 rounded-full transition-transform hover:scale-110", c.class, formData.color === c.id && `ring-2 ${c.selectedClass} ring-offset-2 ring-offset-background`)}
+                    onClick={() => handleChange('color', c.id)}
+                    disabled={isLoading}
+                  />
+                ))}
               </div>
             </div>
+            <div className="space-y-2">
+              <Label>Due Date</Label>
+              <DatePicker
+                date={formData.dueDate ? new Date(formData.dueDate) : undefined}
+                onDateChange={(date) => handleChange('dueDate', date?.toISOString())}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Team Members</Label>
+              <MemberSelector selectedMembers={formData.members.map(m => m.id)} onSelectMembers={(ids) => handleChange('members', ids)} />
+            </div>
+            {error && <p className="text-sm text-center text-destructive">{error}</p>}
+          </div>
         </div>
         <DialogFooter className="p-4 border-t border-border/50 flex-shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit}>Save Changes</Button>
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={isLoading}>{isLoading ? "Saving..." : "Save Changes"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
