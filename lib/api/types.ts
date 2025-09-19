@@ -24,20 +24,21 @@ export interface Label {
 
 // 👇 --- NUEVA INTERFAZ PARA MIEMBROS DE PROYECTO --- 👇
 export interface ProjectMember {
-  user: User;
+  user: string;
+  _id: string;
   role: 'owner' | 'admin' | 'member';
 }
 
 // Define la estructura de un proyecto
 export interface Project {
-  id: string;
+  _id: string;
+  id: string; // Mantenemos 'id' por si se usa en otro lado, pero _id es la fuente
   name: string;
   description: string;
   color: string; 
   progress: number;
   totalTasks: number;
   completedTasks: number;
-  // 👇 --- USAMOS LA NUEVA INTERFAZ --- 👇
   members: ProjectMember[];
   dueDate?: string;
   isOwner: boolean;
