@@ -4,6 +4,10 @@ export interface User {
   email?: string; // El email puede ser opcional dependiendo del endpoint
   avatarUrl?: string;
   bannerUrl?: string;
+  bio?: string;
+  jobTitle?: string;
+  timezone?: string;
+  skills?: string[];
 }
 
 // Define la estructura de un proyecto
@@ -30,14 +34,26 @@ export interface Task {
   description?: string;
   status: 'todo' | 'in-progress' | 'review' | 'done';
   priority: 'low' | 'medium' | 'high' | 'critical';
-  project: string; // Nombre del proyecto
+  project: string;
   projectId: string;
   dueDate?: string;
-  subtasks: { completed: number; total: number };
+  subtasks: Subtask[]; 
   comments: number;
   attachments: number;
-  labels: { id: string, name: string, color: string }[];
+  labels: Label[];
   assignees: User[];
+}
+
+export interface Subtask {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+export interface Label {
+  id: string;
+  name: string;
+  color: string;
 }
 
 // Define la estructura de un To-Do personal
@@ -69,4 +85,15 @@ export interface Activity {
   target: string;
   time: string;
   projectId: string;
+}
+
+export interface SearchResult {
+  type: 'user' | 'project';
+  id: string;
+  name: string;
+  description: string;
+  email?: string;      // <-- Incluimos el email opcional
+  avatar?: string;
+  banner?: string;
+  skills?: string[];
 }

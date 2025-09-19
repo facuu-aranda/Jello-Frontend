@@ -9,7 +9,7 @@ import { CreateTaskModal } from "@/components/modals/create-task-modal"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Settings, Users, Filter } from "lucide-react"
+import { Settings, Users } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { api } from "@/lib/api/client"
 import { Project, Task, Activity, User } from "@/lib/api/types"
@@ -22,7 +22,6 @@ export default function ProjectPage() {
 
   const [project, setProject] = React.useState<Project | null>(null);
   const [tasks, setTasks] = React.useState<Task[]>([]);
-  const [activities, setActivities] = React.useState<Activity[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -73,14 +72,38 @@ export default function ProjectPage() {
     setTasks(prevTasks => [...prevTasks, newTask]);
   };
 
-  const handleTaskUpdated = (updatedTask: Task) => {
+  const handleTaskUpdated = async (updatedTask: Task) => {
+    if (!token) return;
+    
+    // Actualización optimista de la UI
     setTasks(prevTasks => prevTasks.map(task => task.id === updatedTask.id ? updatedTask : task));
-    setSelectedTask(null); // Close modal on update
+    setSelectedTask(null);
+
+    try {
+      // Petición a la API para persistir los cambios
+      await api.put(`/projects/${projectId}/tasks/${updatedTask.id}`, updatedTask, token);
+      // Opcional: Mostrar notificación de éxito
+    } catch (error) {
+      console.error("Failed to update task:", error);
+      // Opcional: Revertir el estado si la API falla y mostrar notificación de error
+    }
   };
 
-  const handleTaskDeleted = (taskId: string) => {
+  const handleTaskDeleted = async (taskId: string) => {
+    if (!token) return;
+    
+    // Actualización optimista
     setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
-    setSelectedTask(null); // Close modal on delete
+    setSelectedTask(null);
+
+    try {
+      // Petición a la API
+      await api.delete(`/projects/${projectId}/tasks/${taskId}`, token);
+      // Opcional: Mostrar notificación de éxito
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+      // Opcional: Revertir el estado y mostrar error
+    }
   };
 
   if (isLoading) {
@@ -105,44 +128,41 @@ export default function ProjectPage() {
             </div>
             <div className="flex flex-wrap items-center gap-3">
                 <div className="flex -space-x-2">
-                  {/* --- INICIO DE LA CORRECCIÓN --- */}
                   {project.members && project.members.slice(0, 4).map((member: User) => (
                     <Avatar key={member.id} className="w-8 h-8 border-2 border-background">
                       <AvatarImage src={member.avatarUrl} alt={member.name} />
                       <AvatarFallback className="text-xs">
-                        {/* Se añade una comprobación para evitar el error si el nombre no existe */}
                         {member.name ? member.name.charAt(0) : '?'}
                       </AvatarFallback>
                     </Avatar>
                   ))}
-                    </div>
-                    <Button variant="ghost" size="sm"><Users className="w-4 h-4 mr-2" />Invite</Button>
-                    <Button variant="outline" size="sm"><Settings className="w-4 h-4 mr-2" />Settings</Button>
                 </div>
-              </div>
+                <Button variant="ghost" size="sm"><Users className="w-4 h-4 mr-2" />Invite</Button>
+                <Button variant="outline" size="sm"><Settings className="w-4 h-4 mr-2" />Settings</Button>
             </div>
-
-            <div className="flex-1 overflow-hidden">
-              <KanbanBoard tasksByStatus={tasksByStatus} onTaskEdit={setSelectedTask} onAddTask={handleAddTask} />
-            </div>
-
-            <TaskModal
-              isOpen={!!selectedTask}
-              onClose={() => setSelectedTask(null)}
-              task={selectedTask}
-              onTaskUpdated={handleTaskUpdated}
-              onTaskDeleted={handleTaskDeleted}
-            />
-
-            <CreateTaskModal
-              isOpen={isCreateTaskModalOpen}
-              onClose={() => setIsCreateTaskModalOpen(false)}
-              onTaskCreated={handleTaskCreated}
-              columnId={selectedColumnId || undefined}
-              projectId={projectId}
-            />
           </div>
-        </AppLayout>
-      )
-    }
-    
+        </div>
+
+        <div className="flex-1 overflow-hidden">
+          <KanbanBoard tasksByStatus={tasksByStatus} onTaskEdit={setSelectedTask} onAddTask={handleAddTask} />
+        </div>
+
+        <TaskModal
+          isOpen={!!selectedTask}
+          onClose={() => setSelectedTask(null)}
+          task={selectedTask}
+          onTaskUpdated={handleTaskUpdated}
+          onTaskDeleted={handleTaskDeleted}
+        />
+
+        <CreateTaskModal
+          isOpen={isCreateTaskModalOpen}
+          onClose={() => setIsCreateTaskModalOpen(false)}
+          onTaskCreated={handleTaskCreated}
+          columnId={selectedColumnId || undefined}
+          projectId={projectId}
+        />
+      </div>
+    </AppLayout>
+  )
+}

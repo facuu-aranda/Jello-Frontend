@@ -6,16 +6,8 @@ import { Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription } from "
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { UserPlus, Handshake } from "lucide-react"
+import { SearchResult } from "@/lib/api/types" 
 
-// Definimos un tipo que pueda ser usado por varios componentes
-export type SearchResult = {
-  type: 'user' | 'project'
-  id: string
-  name: string
-  description: string
-  avatar?: string
-  banner?: string
-}
 
 interface DetailModalProps {
   isOpen: boolean

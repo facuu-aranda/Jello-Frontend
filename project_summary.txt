@@ -166,7 +166,6 @@ frontend/
 ├── components.json
 ├── contexts
 │   ├── AuthContext.tsx
-│   ├── auth-context.tsx
 │   └── theme-context.tsx
 ├── hooks
 │   ├── use-media-query.ts
@@ -8017,30 +8016,31 @@ export function NotificationPanel() {
 import * as React from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Users, Calendar, CheckCircle, Edit, Settings } from "lucide-react"
+import { Users, Calendar, CheckCircle, Edit } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { Project, User } from "@/lib/api/types" // Importamos los tipos
 
 interface ProjectCardProps {
-  project: any;
+  project: Project; // Usamos el tipo correcto
   onEdit: () => void;
 }
 
 export function ProjectCard({ project, onEdit }: ProjectCardProps) {
   
   const handleActionClick = (e: React.MouseEvent, action: () => void) => {
-    e.preventDefault(); // Previene la navegación del Link
-    e.stopPropagation(); // Detiene cualquier otro evento
+    e.preventDefault();
+    e.stopPropagation();
     action();
   };
 
   return (
     <TooltipProvider delayDuration={0}>
       <motion.div
-        className="group relative" // Añadimos 'relative' para posicionar los botones
+        className="group relative"
         whileHover={{ scale: 1.02}}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1}}
@@ -8079,15 +8079,22 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1"><CheckCircle className="w-4 h-4" /><span>{project.completedTasks}/{project.totalTasks}</span></div>
-                  {project.dueDate && <div className="flex items-center gap-1"><Calendar className="w-4 h-4" /><span>{project.dueDate}</span></div>}
+                  {project.dueDate && <div className="flex items-center gap-1"><Calendar className="w-4 h-4" /><span>{new Date(project.dueDate).toLocaleDateString()}</span></div>}
                 </div>
                 <div className="flex items-center gap-1"><Users className="w-4 h-4" /><span>{project.members.length}</span></div>
               </div>
               <div className="flex items-center justify-between mt-2">
                 <div className="flex -space-x-2">
-                  {project.members.slice(0, 4).map((member: any) => (
-                    <Avatar key={member.id} className="w-6 h-6 border-2 border-background"><AvatarImage src={member.avatar} alt={member.name} /><AvatarFallback className="text-xs">{member.name.charAt(0)}</AvatarFallback></Avatar>
+                  {/* --- INICIO DE LA CORRECCIÓN --- */}
+                  {project.members && project.members.slice(0, 4).map((member: User) => (
+                    <Avatar key={member.id} className="w-6 h-6 border-2 border-background">
+                      <AvatarImage src={member.avatarUrl} alt={member.name} />
+                      <AvatarFallback className="text-xs">
+                        {member.name ? member.name.charAt(0) : '?'}
+                      </AvatarFallback>
+                    </Avatar>
                   ))}
+                  {/* --- FIN DE LA CORRECCIÓN --- */}
                   {project.members.length > 4 && <div className="w-6 h-6 rounded-full bg-muted border-2 border-background flex items-center justify-center"><span className="text-xs text-muted-foreground">+{project.members.length - 4}</span></div>}
                 </div>
               </div>
@@ -8095,8 +8102,7 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
           </div>
         </Link>
         
-        {/* 👇 --- BOTONES DE ACCIÓN VISIBLES AL PASAR EL RATÓN --- 👇 */}
-        <div className="absolute top-4 right-4 flex items-center gap-1 ">
+        <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8 bg-background/50 hover:bg-background/80" onClick={(e) => handleActionClick(e, onEdit)}>
@@ -8427,23 +8433,25 @@ export function UserMenu() {
 
 ############################## INICIO DEL ARCHIVO: components\activity\ActivityItem.tsx ##############################
 
-// components/activity/ActivityItem.tsx
 "use client"
 
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { MessageSquare, CheckCircle, UserPlus, FileText } from "lucide-react"
+import { Activity } from "@/lib/api/types" // Importamos el tipo
 
 const activityConfig = {
   comment: { icon: MessageSquare, color: "text-blue-500" },
   completion: { icon: CheckCircle, color: "text-green-500" },
   join: { icon: UserPlus, color: "text-purple-500" },
   document: { icon: FileText, color: "text-orange-500" },
+  default: { icon: MessageSquare, color: "text-gray-500" }, // Añadimos un default
 }
 
-export function ActivityItem({ activity, index }: { activity: any, index: number }) {
-  const config = activityConfig[activity.type as keyof typeof activityConfig] || activityConfig.comment;
+export function ActivityItem({ activity, index }: { activity: Activity, index: number }) {
+  // Usamos 'default' si el tipo no se encuentra
+  const config = activityConfig[activity.type as keyof typeof activityConfig] || activityConfig.default;
   const Icon = config.icon;
 
   return (
@@ -8459,15 +8467,21 @@ export function ActivityItem({ activity, index }: { activity: any, index: number
           </div>
           <div className="flex-1 space-y-1">
             <p className="text-sm text-foreground">
-              <span className="font-semibold">{activity.user.name}</span> {activity.action}{" "}
+              <span className="font-semibold">{activity.user?.name || 'Someone'}</span> {activity.action}{" "}
               <span className="font-semibold text-primary">{activity.target}</span>
             </p>
             <p className="text-xs text-muted-foreground">{activity.time}</p>
           </div>
-          <Avatar className="w-8 h-8">
-            <AvatarImage src={activity.user.avatar} />
-            <AvatarFallback>{activity.user.name.charAt(0)}</AvatarFallback>
-          </Avatar>
+          {/* --- INICIO DE LA CORRECCIÓN --- */}
+          {activity.user && (
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={activity.user.avatar} />
+              <AvatarFallback>
+                {activity.user.name ? activity.user.name.charAt(0) : '?'}
+              </AvatarFallback>
+            </Avatar>
+          )}
+          {/* --- FIN DE LA CORRECCIÓN --- */}
         </div>
       </Link>
     </motion.div>
@@ -8486,7 +8500,7 @@ import { CheckCircle, Clock, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Task } from "@/lib/api/types" // Importa el tipo Task
+import { Task } from "@/lib/api/types"
 
 const priorityConfig = {
   low: { color: "bg-green-500", variant: "secondary" as const },
@@ -8518,7 +8532,6 @@ export function AssignedTasksWidget({ tasks }: AssignedTasksWidgetProps) {
       </div>
 
       <div className="space-y-4">
-        {/* Se añade un estado para cuando no hay tareas */}
         {tasks.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-muted-foreground">You have no assigned tasks. Great job!</p>
@@ -8543,7 +8556,7 @@ export function AssignedTasksWidget({ tasks }: AssignedTasksWidgetProps) {
                     <span>•</span>
                     <div className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      <span>{task.dueDate || 'No due date'}</span>
+                      <span>{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}</span>
                     </div>
                   </div>
                 </div>
@@ -8551,12 +8564,16 @@ export function AssignedTasksWidget({ tasks }: AssignedTasksWidgetProps) {
                   {task.priority}
                 </Badge>
                 
+                {/* --- INICIO DE LA CORRECCIÓN --- */}
                 {firstAssignee && (
                   <Avatar className="w-6 h-6">
                     <AvatarImage src={firstAssignee.avatarUrl || "/placeholder.svg"} alt={firstAssignee.name} />
-                    <AvatarFallback className="text-xs">{firstAssignee.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="text-xs">
+                      {firstAssignee.name ? firstAssignee.name.charAt(0) : '?'}
+                    </AvatarFallback>
                   </Avatar>
                 )}
+                {/* --- FIN DE LA CORRECCIÓN --- */}
               </motion.div>
             )
           })
@@ -18136,86 +18153,6 @@ export { useToast, toast }
 
 
 ############################## FIN DEL ARCHIVO: components\ui\use-toast.ts ##################################
-
-############################## INICIO DEL ARCHIVO: contexts\auth-context.tsx ##############################
-
-"use client";
-
-import * as React from 'react';
-
-interface AuthContextType {
-  token: string | null;
-  user: { id: string; name: string; } | null;
-  isAuthenticated: boolean;
-  login: (token: string, user: { id: string; name: string; }, rememberMe: boolean) => void; // Añadimos rememberMe
-  logout: () => void;
-}
-
-const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
-
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = React.useState<string | null>(null);
-  const [user, setUser] = React.useState<{ id: string; name: string; } | null>(null);
-
-  
-  React.useEffect(() => {
-    const storedToken = localStorage.getItem('jwt_token');
-    const storedUser = localStorage.getItem('user_data');
-    const expiryDate = localStorage.getItem('session_expiry');
-
-    if (storedToken && storedUser && expiryDate && new Date().getTime() < JSON.parse(expiryDate)) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    } else {
-      
-      localStorage.removeItem('jwt_token');
-      localStorage.removeItem('user_data');
-      localStorage.removeItem('session_expiry');
-    }
-  }, []);
-
-  const login = (newToken: string, userData: { id: string; name: string; }, rememberMe: boolean) => {
-    const now = new Date();
-    
-    // Duración en milisegundos
-    const duration = rememberMe 
-      ? 7 * 24 * 60 * 60 * 1000  
-      : 2 * 24 * 60 * 60 * 1000; 
-
-    const expiryDate = now.getTime() + duration;
-    
-    setToken(newToken);
-    setUser(userData);
-    localStorage.setItem('jwt_token', newToken);
-    localStorage.setItem('user_data', JSON.stringify(userData));
-    localStorage.setItem('session_expiry', JSON.stringify(expiryDate)); 
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('user_data');
-    localStorage.removeItem('session_expiry'); 
-    window.location.href = '/';
-  };
-
-  return (
-    <AuthContext.Provider value={{ token, user, isAuthenticated: !!token, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
-  const context = React.useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-}
-
-############################## FIN DEL ARCHIVO: contexts\auth-context.tsx ##################################
 
 ############################## INICIO DEL ARCHIVO: contexts\AuthContext.tsx ##############################
 

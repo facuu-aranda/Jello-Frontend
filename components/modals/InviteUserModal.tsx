@@ -1,35 +1,67 @@
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription } from "@/components/ui/modal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-
-// Mock de proyectos del usuario para el selector
-const userProjects = [
-  { id: "1", name: "Website Redesign" },
-  { id: "4", name: "Backend API" },
-]
+import { useAuth } from "@/contexts/AuthContext"
+import { api } from "@/lib/api/client"
+import { Project } from "@/lib/api/types"
+import { SearchResult } from "@/lib/api/types" 
 
 interface InviteUserModalProps {
   isOpen: boolean
   onClose: () => void
-  user: { name: string; avatar?: string }
+  user: SearchResult // Usamos el tipo compartido
 }
 
 export function InviteUserModal({ isOpen, onClose, user }: InviteUserModalProps) {
-  const [selectedProject, setSelectedProject] = React.useState("")
+  const { token } = useAuth();
+  const [ownedProjects, setOwnedProjects] = React.useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = React.useState("");
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const handleInvite = () => {
-    if (!selectedProject) return;
-    console.log(`Inviting ${user.name} to project ID ${selectedProject}`);
+  React.useEffect(() => {
+    const fetchOwnedProjects = async () => {
+      if (isOpen && token) {
+        try {
+          const projects = await api.get('/projects/owned', token);
+          setOwnedProjects(projects);
+        } catch (err) {
+          console.error("Failed to fetch owned projects", err);
+        }
+      }
+    };
+    fetchOwnedProjects();
+  }, [isOpen, token]);
+
+  const handleInvite = async () => {
+    if (!selectedProject || !user.email) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.post(`/projects/${selectedProject}/members`, { email: user.email }, token);
+      // Opcional: mostrar un toast de éxito
+      onClose();
+    } catch (err: any) {
+      setError(err.message || "Failed to send invitation.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Limpiar estado al cerrar
+  const handleClose = () => {
+    setSelectedProject("");
+    setError(null);
+    setIsLoading(false);
     onClose();
   }
 
   return (
-    <Modal open={isOpen} onOpenChange={onClose}>
+    <Modal open={isOpen} onOpenChange={handleClose}>
       <ModalContent>
         <ModalHeader>
           <div className="flex items-center gap-3">
@@ -39,7 +71,7 @@ export function InviteUserModal({ isOpen, onClose, user }: InviteUserModalProps)
             </Avatar>
             <div>
               <ModalTitle>Invite {user.name} to a project</ModalTitle>
-              <ModalDescription>Select a project to send the invitation.</ModalDescription>
+              <ModalDescription>Select one of your projects to send the invitation.</ModalDescription>
             </div>
           </div>
         </ModalHeader>
@@ -49,14 +81,21 @@ export function InviteUserModal({ isOpen, onClose, user }: InviteUserModalProps)
               <SelectValue placeholder="Choose a project..." />
             </SelectTrigger>
             <SelectContent>
-              {userProjects.map((project) => (
-                <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
-              ))}
+              {ownedProjects.length > 0 ? (
+                ownedProjects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                ))
+              ) : (
+                <div className="p-4 text-sm text-muted-foreground">You don't own any projects.</div>
+              )}
             </SelectContent>
           </Select>
+          {error && <p className="text-sm text-destructive text-center">{error}</p>}
           <div className="flex justify-end gap-3">
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button onClick={handleInvite} disabled={!selectedProject}>Send Invitation</Button>
+            <Button variant="ghost" onClick={handleClose} disabled={isLoading}>Cancel</Button>
+            <Button onClick={handleInvite} disabled={!selectedProject || isLoading}>
+              {isLoading ? "Sending..." : "Send Invitation"}
+            </Button>
           </div>
         </div>
       </ModalContent>

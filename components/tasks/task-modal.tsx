@@ -14,19 +14,16 @@ import { CommentSection } from "./comment-section"
 import { AttachmentList } from "./attachment-list"
 import { cn } from "@/lib/utils"
 import { DatePicker } from "@/components/ui/date-picker"
+import { Task, Label } from "@/lib/api/types"
 
-interface TaskData {
-  id: string; title: string; description?: string;
-  priority: "low" | "medium" | "high" | "critical";
-  status: "todo" | "in-progress" | "review" | "done";
-  labels: any[]; assignees?: any[]; dueDate?: string;
-  subtasks: any[]; projectId?: string;
-}
 interface LabelData { id: string; name: string; color: string; }
 interface TaskModalProps {
-  isOpen: boolean; onClose: () => void; task: TaskData | null;
-  onSubmit?: (taskData: any) => void; onDelete?: (taskId: string) => void;
-  showGoToProjectButton?: boolean; mode?: "view" | "edit";
+  isOpen: boolean;
+  onClose: () => void;
+  task: Task | null; // <-- 3. Usamos directamente el tipo global 'Task'
+  onTaskUpdated: (taskData: Task) => void; // <-- 4. Usamos el tipo 'Task' aquí también
+  onTaskDeleted: (taskId: string) => void;
+  showGoToProjectButton?: boolean;
 }
 
 const mockComments = [
