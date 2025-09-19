@@ -12,12 +12,12 @@ import { ImageUploadField } from "@/components/forms/image-upload-field"
 import { DatePicker } from "../ui/date-picker"
 import { useAuth } from "@/contexts/AuthContext"
 import { api } from "@/lib/api/client"
-import { Project } from "@/lib/api/types"
 
 interface CreateProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (newProject: Project) => void;
+  // CAMBIO: La función ya no espera recibir el proyecto como argumento.
+  onProjectCreated: () => void;
 }
 
 const projectColors = [
@@ -27,7 +27,7 @@ const projectColors = [
   { id: 'bg-primary', class: 'bg-primary', selectedClass: 'ring-primary' },
 ];
 
-export function CreateProjectModal({ isOpen, onClose, onSubmit: onProjectCreated }: CreateProjectModalProps) {
+export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: CreateProjectModalProps) {
   const { token } = useAuth();
 
   const [name, setName] = React.useState("");
@@ -55,8 +55,7 @@ export function CreateProjectModal({ isOpen, onClose, onSubmit: onProjectCreated
     resetForm();
     onClose();
   }
-  
-  // Función manejadora para actualizar el estado de los miembros seleccionados
+
   const handleMemberSelection = (selectedIds: string[]) => {
       setMembers(selectedIds);
   };
@@ -93,9 +92,10 @@ export function CreateProjectModal({ isOpen, onClose, onSubmit: onProjectCreated
         bannerUrl: bannerImageUrl,
       };
 
-      const newProject = await api.post('/projects', projectData, token);
+      await api.post('/projects', projectData, token);
 
-      onProjectCreated(newProject);
+      // CAMBIO: Se llama a la función sin argumentos.
+      onProjectCreated();
       handleClose();
 
     } catch (err: any) {
