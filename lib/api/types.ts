@@ -1,47 +1,13 @@
 export interface User {
   id: string;
   name: string;
-  email?: string; // El email puede ser opcional dependiendo del endpoint
+  email?: string; 
   avatarUrl?: string;
   bannerUrl?: string;
   bio?: string;
   jobTitle?: string;
   timezone?: string;
   skills?: string[];
-}
-
-// Define la estructura de un proyecto
-export interface Project {
-  id: string;
-  name: string;
-  description: string;
-  color: string; // Asumimos que el backend guardará el `className` de Tailwind
-  progress: number;
-  totalTasks: number;
-  completedTasks: number;
-  members: User[];
-  dueDate?: string;
-  isOwner: boolean;
-  updatedAt: string; // Para ordenar
-  avatarUrl?: string;
-  bannerUrl?: string;
-}
-
-// Define la estructura de una tarea
-export interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  status: 'todo' | 'in-progress' | 'review' | 'done';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  project: string;
-  projectId: string;
-  dueDate?: string;
-  subtasks: Subtask[]; 
-  comments: number;
-  attachments: number;
-  labels: Label[];
-  assignees: User[];
 }
 
 export interface Subtask {
@@ -56,14 +22,53 @@ export interface Label {
   color: string;
 }
 
-// Define la estructura de un To-Do personal
+// 👇 --- NUEVA INTERFAZ PARA MIEMBROS DE PROYECTO --- 👇
+export interface ProjectMember {
+  user: User;
+  role: 'owner' | 'admin' | 'member';
+}
+
+// Define la estructura de un proyecto
+export interface Project {
+  id: string;
+  name: string;
+  description: string;
+  color: string; 
+  progress: number;
+  totalTasks: number;
+  completedTasks: number;
+  // 👇 --- USAMOS LA NUEVA INTERFAZ --- 👇
+  members: ProjectMember[];
+  dueDate?: string;
+  isOwner: boolean;
+  updatedAt: string; 
+  avatarUrl?: string;
+  bannerUrl?: string;
+}
+
+// Define la estructura de una tarea
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  status: 'todo' | 'in-progress' | 'review' | 'done';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  project: string; 
+  projectId: string;
+  dueDate?: string;
+  subtasks: Subtask[]; 
+  comments: number;
+  attachments: number;
+  labels: Label[];
+  assignees: User[];
+}
+
 export interface Todo {
   id: string;
   text: string;
   completed: boolean;
 }
 
-// Define la estructura de una notificación
 export interface Notification {
   id: string;
   type: 'invitation' | 'comment' | 'reminder';
@@ -73,7 +78,6 @@ export interface Notification {
   avatar?: string;
 }
 
-// Define la estructura de un registro de actividad
 export interface Activity {
   id: string;
   type: string;
@@ -92,7 +96,7 @@ export interface SearchResult {
   id: string;
   name: string;
   description: string;
-  email?: string;      // <-- Incluimos el email opcional
+  email?: string;
   avatar?: string;
   banner?: string;
   skills?: string[];

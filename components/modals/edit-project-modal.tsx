@@ -5,23 +5,22 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { CalendarIcon, Trash2 } from "lucide-react"
-import { format } from "date-fns"
+import { Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { MemberSelector } from "@/components/forms/member-selector"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription, DialogClose } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { ImageUploadField } from "@/components/forms/image-upload-field"
 import { DatePicker } from "../ui/date-picker"
 import { useAuth } from "@/contexts/AuthContext"
 import { api } from "@/lib/api/client"
-import { Project } from "@/lib/api/types"
+import { Project, ProjectMember, User } from "@/lib/api/types"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog"
 
 interface EditProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onProjectUpdated: (updatedProject: Project) => void;
-  onProjectDeleted: (projectId: string) => void;
+  onProjectUpdated: () => void;
+  onProjectDeleted: () => void;
   project: Project | null;
 }
 
@@ -48,9 +47,18 @@ export function EditProjectModal({ isOpen, onClose, onProjectUpdated, onProjectD
     setFormData(prev => prev ? { ...prev, [field]: value } : null);
   };
 
+  const handleMemberSelection = (selectedIds: string[]) => {
+    // Esto es simplificado. Una implementación real necesitaría obtener los objetos de usuario
+    // o el backend debería poder aceptar solo los IDs. Por ahora, creamos una estructura parcial.
+    const newMembers: ProjectMember[] = selectedIds.map(id => {
+        const existingMember = formData.members.find(m => m.user.id === id);
+        return existingMember || { user: { id, name: '...' }, role: 'member' };
+    });
+    handleChange('members', newMembers);
+  };
+  
   const handleFileChange = (field: 'avatarUrl' | 'bannerUrl', file: File | null) => {
-    // Para manejar la subida de archivos, guardamos el objeto File
-    setFormData(prev => prev ? { ...prev, [field]: file } : null);
+    setFormData(prev => prev ? { ...prev, [field]: file as any } : null);
   }
 
   const handleSubmit = async () => {
@@ -61,20 +69,25 @@ export function EditProjectModal({ isOpen, onClose, onProjectUpdated, onProjectD
     setIsLoading(true);
     setError(null);
     try {
-      const updatePayload: Partial<Project> = { ...formData };
+      const { members, ...restOfData } = formData;
+      const memberIds = members.map(m => m.user.id);
 
-      // Subir nuevas imágenes si son objetos File
+      const updatePayload: Omit<Partial<Project>, "members"> & { members: string[] } = { 
+        ...restOfData,
+        members: memberIds
+      };
+
       if (updatePayload.avatarUrl && typeof updatePayload.avatarUrl !== 'string') {
-        const res = await api.upload(updatePayload.avatarUrl as File, token);
+        const res = await api.upload(updatePayload.avatarUrl as any, token);
         updatePayload.avatarUrl = res.url;
       }
       if (updatePayload.bannerUrl && typeof updatePayload.bannerUrl !== 'string') {
-        const res = await api.upload(updatePayload.bannerUrl as File, token);
+        const res = await api.upload(updatePayload.bannerUrl as any, token);
         updatePayload.bannerUrl = res.url;
       }
 
-      const updatedProject = await api.put(`/projects/${formData.id}`, updatePayload, token);
-      onProjectUpdated(updatedProject);
+      await api.put(`/projects/${formData.id}`, updatePayload, token);
+      onProjectUpdated();
       onClose();
     } catch (err: any) {
       setError(err.message || "Failed to update project.");
@@ -88,7 +101,7 @@ export function EditProjectModal({ isOpen, onClose, onProjectUpdated, onProjectD
     setError(null);
     try {
       await api.delete(`/projects/${formData.id}`, token);
-      onProjectDeleted(formData.id);
+      onProjectDeleted();
       onClose();
     } catch (err: any) {
       setError(err.message || "Failed to delete project.");
@@ -160,7 +173,8 @@ export function EditProjectModal({ isOpen, onClose, onProjectUpdated, onProjectD
             </div>
             <div className="space-y-2">
               <Label>Team Members</Label>
-              <MemberSelector selectedMembers={formData.members.map(m => m.id)} onSelectMembers={(ids) => handleChange('members', ids)} />
+              {/* 👇 --- CORRECCIÓN CRÍTICA AQUÍ --- 👇 */}
+              <MemberSelector selectedMembers={formData.members.map(m => m.user.id)} onSelectMembers={handleMemberSelection} />
             </div>
             {error && <p className="text-sm text-center text-destructive">{error}</p>}
           </div>

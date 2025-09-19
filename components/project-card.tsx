@@ -9,10 +9,10 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { Project, User } from "@/lib/api/types" // Importamos los tipos
+import { Project, ProjectMember } from "@/lib/api/types"
 
 interface ProjectCardProps {
-  project: Project; // Usamos el tipo correcto
+  project: Project;
   onEdit: () => void;
 }
 
@@ -72,16 +72,15 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
               </div>
               <div className="flex items-center justify-between mt-2">
                 <div className="flex -space-x-2">
-                  {/* --- INICIO DE LA CORRECCIÓN --- */}
-                  {project.members && project.members.slice(0, 4).map((member: User) => (
-                    <Avatar key={member.id} className="w-6 h-6 border-2 border-background">
-                      <AvatarImage src={member.avatarUrl} alt={member.name} />
+                  {/* 👇 --- CORRECCIÓN CRÍTICA AQUÍ --- 👇 */}
+                  {project.members && project.members.slice(0, 4).map((member: ProjectMember) => (
+                    <Avatar key={member.user.id} className="w-6 h-6 border-2 border-background">
+                      <AvatarImage src={member.user.avatarUrl} alt={member.user.name} />
                       <AvatarFallback className="text-xs">
-                        {member.name ? member.name.charAt(0) : '?'}
+                        {member.user.name ? member.user.name.charAt(0) : '?'}
                       </AvatarFallback>
                     </Avatar>
                   ))}
-                  {/* --- FIN DE LA CORRECCIÓN --- */}
                   {project.members.length > 4 && <div className="w-6 h-6 rounded-full bg-muted border-2 border-background flex items-center justify-center"><span className="text-xs text-muted-foreground">+{project.members.length - 4}</span></div>}
                 </div>
               </div>
