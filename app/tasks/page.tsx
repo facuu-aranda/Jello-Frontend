@@ -11,36 +11,28 @@ import { Search, ArrowRight } from "lucide-react"
 import { TaskModal } from "@/components/tasks/task-modal"
 import { cn } from "@/lib/utils"
 
-// Tipo para definir la estructura de una tarea
+// CORRECCIÓN: Tipos alineados con los componentes hijos
+interface LabelData { id: string; name: string; color: string; }
+interface SubtaskData { id: string; text: string; completed: boolean; }
 interface Task {
-    id: string;
-    title: string;
-    description?: string;
+    id: string; title: string; description?: string;
     status: "todo" | "in-progress" | "review" | "done";
     priority: "low" | "medium" | "high" | "critical";
-    project: string;
-    projectId: string;
-    dueDate?: string;
-    subtasks: { completed: number; total: number };
-    comments: number;
-    attachments: number;
-    labels: string[];
+    project: string; projectId: string; dueDate?: string;
+    subtasks: SubtaskData[];
+    comments: any[]; attachments: any[]; labels: LabelData[];
 }
 
 const mockTasks: Task[] = [
-    { id: "1", title: "Design new user onboarding flow", description: "Create wireframes and mockups for the improved user onboarding experience", status: "in-progress", priority: "high", project: "Mobile App Redesign", projectId: "2", dueDate: "2025-01-14", subtasks: { completed: 2, total: 5 }, comments: 3, attachments: 2, labels: ["Design", "UX"] },
-    { id: "2", title: "Implement authentication system", description: "Set up JWT-based authentication with refresh tokens", status: "todo", priority: "high", project: "Backend API", projectId: "4", dueDate: "2025-01-17", subtasks: { completed: 0, total: 3 }, comments: 1, attachments: 0, labels: ["Backend", "Security"] },
-    { id: "3", title: "Write unit tests for user service", description: "Comprehensive test coverage for all user-related operations", status: "review", priority: "medium", project: "Backend API", projectId: "4", dueDate: "2025-02-01", subtasks: { completed: 4, total: 4 }, comments: 2, attachments: 1, labels: ["Testing", "Backend"] },
-    { id: "4", title: "Update documentation", description: "Update API documentation with new endpoints", status: "done", priority: "low", project: "Documentation", projectId: "3", dueDate: "2025-02-10", subtasks: { completed: 2, total: 2 }, comments: 0, attachments: 3, labels: ["Documentation"] },
+    { id: "1", title: "Design new user onboarding flow", description: "Create wireframes and mockups for the improved user onboarding experience", status: "in-progress", priority: "high", project: "Mobile App Redesign", projectId: "2", dueDate: "2025-01-14", subtasks: [{id: 's1', text: 'Define steps', completed: true}], comments: [], attachments: [], labels: [{id: "1", name: "Design", color: "#ec4899"}, {id: "2", name: "UX", color: "#8b5cf6"}] },
+    { id: "2", title: "Implement authentication system", description: "Set up JWT-based authentication with refresh tokens", status: "todo", priority: "high", project: "Backend API", projectId: "4", dueDate: "2025-01-17", subtasks: [], comments: [], attachments: [], labels: [{id: "3", name: "Backend", color: "#14b8a6"}, {id: "4", name: "Security", color: "#ef4444"}] },
+    { id: "3", title: "Write unit tests for user service", description: "Comprehensive test coverage for all user-related operations", status: "review", priority: "medium", project: "Backend API", projectId: "4", dueDate: "2025-02-01", subtasks: [], comments: [], attachments: [], labels: [{id: "5", name: "Testing", color: "#f59e0b"}, {id: "3", name: "Backend", color: "#14b8a6"}] },
+    { id: "4", title: "Update documentation", description: "Update API documentation with new endpoints", status: "done", priority: "low", project: "Documentation", projectId: "3", dueDate: "2025-02-10", subtasks: [], comments: [], attachments: [], labels: [{id: "6", name: "Docs", color: "#6b7280"}] },
 ];
 
-// 👇 --- ESTE OBJETO ES LA CLAVE DE LA SOLUCIÓN --- 👇
-// Se asegura de que cada 'status' tenga un color y una etiqueta definidos.
 const statusConfig = {
-    "all": { color: "bg-gray-500", label: "All Tasks" },
-    "todo": { color: "bg-gray-500", label: "To Do" },
-    "in-progress": { color: "bg-blue-500", label: "In Progress" },
-    "review": { color: "bg-yellow-500", label: "Review" },
+    "all": { color: "bg-gray-500", label: "All Tasks" }, "todo": { color: "bg-gray-500", label: "To Do" },
+    "in-progress": { color: "bg-blue-500", label: "In Progress" }, "review": { color: "bg-yellow-500", label: "Review" },
     "done": { color: "bg-green-500", label: "Done" },
 };
 
@@ -124,7 +116,7 @@ export default function MyTasksPage() {
                                     </div>
                                     <div className="flex flex-col items-end gap-2">
                                         <div className="flex gap-1">
-                                            {task.labels.map(label => <Badge key={label} variant="secondary">{label}</Badge>)}
+                                            {task.labels.map(label => <Badge key={label.id} variant="secondary" style={{ backgroundColor: label.color + '20', color: label.color }}>{label.name}</Badge>)}
                                         </div>
                                         <Button asChild variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
                                             <Link href={`/project/${task.projectId}`}>Go to project <ArrowRight className="w-3 h-3 ml-2" /></Link>
@@ -146,3 +138,4 @@ export default function MyTasksPage() {
         </>
     )
 }
+

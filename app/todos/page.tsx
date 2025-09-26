@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Icon } from "@/components/ui/icon"
 import { Progress } from "@/components/ui/progress"
-import { Trash2, Plus } from "lucide-react"
+import { Trash2, Plus, CheckSquare } from "lucide-react"
 import { DatePicker } from "@/components/ui/date-picker"
 
 interface Todo {
@@ -96,7 +96,7 @@ export default function PersonalTodosPage() {
         <div>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-jello-blue to-jello-blue-dark flex items-center justify-center">
-              <Icon name="check-square" className="w-6 h-6 text-white" />
+              <Icon as={CheckSquare} className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground">Personal Todos</h1>
@@ -121,14 +121,14 @@ export default function PersonalTodosPage() {
                   <div className="grid sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>Priority</Label>
-                      <Select value={newTodoPriority} onValueChange={(v: any) => setNewTodoPriority(v)}>
+                      <Select value={newTodoPriority} onValueChange={(v: "low" | "medium" | "high") => setNewTodoPriority(v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>{priorities.filter(p => p.value !== 'All').map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>Category</Label>
-                      <Select value={newTodoCategory} onValueChange={(v: any) => setNewTodoCategory(v)}>
+                      <Select value={newTodoCategory} onValueChange={(v: string) => setNewTodoCategory(v)}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>{categories.filter(c => c !== 'All').map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                       </Select>
@@ -165,7 +165,6 @@ export default function PersonalTodosPage() {
               <span className="text-sm font-medium text-foreground">Priority:</span>
               <Select value={filterPriority} onValueChange={setFilterPriority}>
                 <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                {/* 👇 --- LÍNEA CORREGIDA --- 👇 */}
                 <SelectContent>{priorities.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
@@ -216,3 +215,4 @@ export default function PersonalTodosPage() {
     </AppLayout>
   )
 }
+

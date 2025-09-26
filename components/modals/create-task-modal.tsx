@@ -59,7 +59,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
     description: "",
     priority: "medium",
     status: columnId || "todo",
-    dueDate: "",
+    dueDate: undefined as Date | undefined,
     labels: [] as string[],
     assignees: [] as string[],
     subtasks: [] as string[],
@@ -70,11 +70,9 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-
     if (!formData.title.trim()) {
       newErrors.title = "Task title is required"
     }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -84,21 +82,14 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
     if (validateForm()) {
       onSubmit({
         ...formData,
-        columnId,
+        dueDate: formData.dueDate?.toISOString(),
         projectId,
         labels: formData.labels.map((id) => availableLabels.find((l) => l.id === id)).filter(Boolean),
         assignees: formData.assignees.map((id) => mockTeamMembers.find((m) => m.id === id)).filter(Boolean),
       })
-      // Reset form
       setFormData({
-        title: "",
-        description: "",
-        priority: "medium",
-        status: columnId || "todo",
-        dueDate: "",
-        labels: [],
-        assignees: [],
-        subtasks: [],
+        title: "", description: "", priority: "medium", status: columnId || "todo",
+        dueDate: undefined, labels: [], assignees: [], subtasks: [],
       })
       setErrors({})
       onClose()
@@ -123,19 +114,13 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
 
   const addSubtask = () => {
     if (newSubtask.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        subtasks: [...prev.subtasks, newSubtask.trim()],
-      }))
+      setFormData((prev) => ({ ...prev, subtasks: [...prev.subtasks, newSubtask.trim()] }))
       setNewSubtask("")
     }
   }
 
   const removeSubtask = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      subtasks: prev.subtasks.filter((_, i) => i !== index),
-    }))
+    setFormData((prev) => ({ ...prev, subtasks: prev.subtasks.filter((_, i) => i !== index) }))
   }
 
   return (
@@ -158,7 +143,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
 
           <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[calc(95vh-120px)]">
             <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-              {/* Task Title */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Task Title *</label>
                 <Input
@@ -170,7 +154,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
                 {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
               </div>
 
-              {/* Task Description */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Description</label>
                 <Textarea
@@ -181,17 +164,10 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
                 />
               </div>
 
-              {/* Priority and Status */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                    <Flag className="w-4 h-4" />
-                    Priority
-                  </label>
-                  <Select
-                    value={formData.priority}
-                    onValueChange={(value) => setFormData((prev) => ({ ...prev, priority: value }))}
-                  >
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2"><Flag className="w-4 h-4" />Priority</label>
+                  <Select value={formData.priority} onValueChange={(value) => setFormData((prev) => ({ ...prev, priority: value }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -210,160 +186,68 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Status</label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                  <Select value={formData.status} onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {statusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
+                      {statusOptions.map((option) => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-
-              {/* Due Date */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Due Date (Optional)
-                </label>
+                <label className="text-sm font-medium text-foreground flex items-center gap-2"><Calendar className="w-4 h-4" />Due Date (Optional)</label>
                 <DatePicker
-                  value={formData.dueDate}
-                  onChange={(date) => setFormData((prev) => ({ ...prev, dueDate: date }))}
+                  date={formData.dueDate}
+                  onDateChange={(date: Date | undefined) => setFormData((prev) => ({ ...prev, dueDate: date }))}
                   placeholder="Select due date..."
                 />
               </div>
-
-              {/* Labels */}
               <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Tag className="w-4 h-4" />
-                  Labels
-                </label>
+                <label className="text-sm font-medium text-foreground flex items-center gap-2"><Tag className="w-4 h-4" />Labels</label>
                 <div className="flex flex-wrap gap-2">
                   {availableLabels.map((label) => (
-                    <motion.button
-                      key={label.id}
-                      type="button"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => toggleLabel(label.id)}
-                      className={cn(
-                        "px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium border-2 transition-all min-h-[32px] touch-manipulation",
-                        formData.labels.includes(label.id)
-                          ? "border-transparent text-white"
-                          : "border-border text-foreground hover:bg-muted",
+                    <motion.button key={label.id} type="button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => toggleLabel(label.id)}
+                      className={cn( "px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium border-2 transition-all min-h-[32px] touch-manipulation",
+                        formData.labels.includes(label.id) ? "border-transparent text-white" : "border-border text-foreground hover:bg-muted",
                       )}
-                      style={formData.labels.includes(label.id) ? { backgroundColor: label.color } : {}}
-                    >
+                      style={formData.labels.includes(label.id) ? { backgroundColor: label.color } : {}}>
                       {label.name}
                     </motion.button>
                   ))}
                 </div>
-                {formData.labels.length > 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    {formData.labels.length} label{formData.labels.length !== 1 ? "s" : ""} selected
-                  </p>
-                )}
               </div>
-
-              {/* Assignees */}
               <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Users className="w-6 h-6 sm:w-8 sm:h-8" />
-                  Assignees
-                </label>
+                <label className="text-sm font-medium text-foreground flex items-center gap-2"><Users className="w-6 h-6 sm:w-8 sm:h-8" />Assignees</label>
                 <div className="space-y-2 max-h-40 sm:max-h-48 overflow-y-auto">
                   {mockTeamMembers.map((member) => (
-                    <motion.div
-                      key={member.id}
-                      className={cn(
-                        "flex items-center gap-3 p-2 sm:p-3 rounded-xl border-2 cursor-pointer transition-all min-h-[48px] touch-manipulation",
-                        formData.assignees.includes(member.id)
-                          ? "border-primary bg-primary/10"
-                          : "border-border hover:bg-muted",
-                      )}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => toggleAssignee(member.id)}
-                    >
-                      <Avatar className="w-6 h-6 sm:w-8 sm:h-8">
-                        <AvatarImage src={member.avatar || "/placeholder.svg"} alt={member.name} />
-                        <AvatarFallback className="text-xs">{member.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground text-sm sm:text-base truncate">{member.name}</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{member.email}</p>
-                      </div>
-                      {formData.assignees.includes(member.id) && (
-                        <Badge variant="secondary" className="text-xs">
-                          Assigned
-                        </Badge>
-                      )}
+                    <motion.div key={member.id} className={cn("flex items-center gap-3 p-2 sm:p-3 rounded-xl border-2 cursor-pointer transition-all min-h-[48px] touch-manipulation", formData.assignees.includes(member.id) ? "border-primary bg-primary/10" : "border-border hover:bg-muted")}
+                      whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => toggleAssignee(member.id)}>
+                      <Avatar className="w-6 h-6 sm:w-8 sm:h-8"><AvatarImage src={member.avatar || "/placeholder.svg"} alt={member.name} /><AvatarFallback className="text-xs">{member.name.charAt(0)}</AvatarFallback></Avatar>
+                      <div className="flex-1 min-w-0"><p className="font-medium text-foreground text-sm sm:text-base truncate">{member.name}</p><p className="text-xs sm:text-sm text-muted-foreground truncate">{member.email}</p></div>
+                      {formData.assignees.includes(member.id) && (<Badge variant="secondary" className="text-xs">Assigned</Badge>)}
                     </motion.div>
                   ))}
                 </div>
               </div>
-
-              {/* Subtasks */}
               <div className="space-y-3">
                 <label className="text-sm font-medium text-foreground">Subtasks</label>
                 <div className="space-y-2">
                   {formData.subtasks.map((subtask, index) => (
                     <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg min-h-[40px]">
                       <span className="flex-1 text-sm">{subtask}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeSubtask(index)}
-                        className="min-h-[32px] min-w-[32px]"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeSubtask(index)} className="min-h-[32px] min-w-[32px]"><X className="w-4 h-4" /></Button>
                     </div>
                   ))}
                   <div className="flex gap-2">
-                    <Input
-                      value={newSubtask}
-                      onChange={(e) => setNewSubtask(e.target.value)}
-                      placeholder="Add a subtask..."
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSubtask())}
-                      className="min-h-[40px]"
-                    />
-                    <Button
-                      type="button"
-                      onClick={addSubtask}
-                      disabled={!newSubtask.trim()}
-                      className="min-h-[40px] min-w-[40px]"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
+                    <Input value={newSubtask} onChange={(e) => setNewSubtask(e.target.value)} placeholder="Add a subtask..." onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSubtask())} className="min-h-[40px]" />
+                    <Button type="button" onClick={addSubtask} disabled={!newSubtask.trim()} className="min-h-[40px] min-w-[40px]"><Plus className="w-4 h-4" /></Button>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 p-4 sm:p-6 pt-4 border-t border-border">
-              <Button type="submit" className="w-full sm:flex-1 min-h-[44px]">
-                Create Task
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                className="w-full sm:w-auto min-h-[44px] bg-transparent"
-              >
-                Cancel
-              </Button>
+              <Button type="submit" className="w-full sm:flex-1 min-h-[44px]">Create Task</Button>
+              <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto min-h-[44px] bg-transparent">Cancel</Button>
             </div>
           </form>
         </motion.div>
@@ -371,3 +255,4 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
     </Modal>
   )
 }
+

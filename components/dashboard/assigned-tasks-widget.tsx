@@ -80,16 +80,18 @@ export function AssignedTasksWidget() {
               <h4 className="font-medium text-foreground">{task.title}</h4>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>{task.project}</span>
-                <span>•</span>
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  <span>{task.dueDate}</span>
-                </div>
               </div>
             </div>
 
             {/* Priority Badge */}
+            <div className="flex gap-3 content-end">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  <span>{task.dueDate}</span>
+                </div>
+                <span>•</span>
             <Badge
+            
               variant={priorityConfig[task.priority as keyof typeof priorityConfig].variant}
               className="capitalize"
             >
@@ -101,6 +103,8 @@ export function AssignedTasksWidget() {
               <AvatarImage src={task.assignee.avatar || "/placeholder.svg"} alt={task.assignee.name} />
               <AvatarFallback className="text-xs">{task.assignee.name.charAt(0)}</AvatarFallback>
             </Avatar>
+
+            </div>
           </motion.div>
         ))}
       </div>

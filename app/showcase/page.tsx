@@ -6,18 +6,24 @@ import {
   Button,
   Input,
   Textarea,
-  Select,
   Modal,
   Avatar,
   Spinner,
   Badge,
   Checkbox,
-  Toast,
   Icon,
   LanguageSwitcher,
   ColorPicker,
   DatePicker,
 } from "@/components/ui"
+import { Toast, ToastTitle, ToastDescription } from "@/components/ui/toast"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { AnimatedBackground } from "@/components/animated-background"
 import { JelliChat } from "@/components/jelli-chat"
 import { ProjectCard } from "@/components/project-card"
@@ -32,8 +38,8 @@ export default function ComponentShowcasePage() {
   const [selectValue, setSelectValue] = useState("")
   const [checkboxValue, setCheckboxValue] = useState(false)
   const [colorValue, setColorValue] = useState("#3b82f6")
-  const [dateValue, setDateValue] = useState("")
-
+  const [dateValue, setDateValue] = useState<Date>()
+  
   const showcaseSections = [
     {
       title: "UI Primitives",
@@ -57,7 +63,7 @@ export default function ComponentShowcasePage() {
               </div>
               <div className="flex flex-wrap gap-3">
                 <Button disabled>Disabled</Button>
-                <Button loading>Loading</Button>
+                <Button disabled>Loading...</Button>
                 <Button>
                   <Heart className="w-4 h-4 mr-2" />
                   With Icon
@@ -83,18 +89,18 @@ export default function ComponentShowcasePage() {
                 onChange={(e) => setTextareaValue(e.target.value)}
                 rows={3}
               />
-              <Select
-                value={selectValue}
-                onValueChange={setSelectValue}
-                placeholder="Choose an option"
-                options={[
-                  { value: "option1", label: "Option 1" },
-                  { value: "option2", label: "Option 2" },
-                  { value: "option3", label: "Option 3" },
-                ]}
-              />
+              <Select value={selectValue} onValueChange={setSelectValue}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose an option" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="option1">Option 1</SelectItem>
+                  <SelectItem value="option2">Option 2</SelectItem>
+                  <SelectItem value="option3">Option 3</SelectItem>
+                </SelectContent>
+              </Select>
               <div className="flex items-center gap-3">
-                <Checkbox checked={checkboxValue} onCheckedChange={setCheckboxValue} />
+                <Checkbox checked={checkboxValue} onCheckedChange={(checked) => setCheckboxValue(Boolean(checked))} />
                 <label className="text-sm text-foreground">Accept terms and conditions</label>
               </div>
             </div>
@@ -112,7 +118,7 @@ export default function ComponentShowcasePage() {
               </div>
               <div className="flex items-center gap-4">
                 <Spinner size="sm" />
-                <Spinner size="default" />
+                <Spinner size="md" />
                 <Spinner size="lg" />
               </div>
               <div className="flex gap-3">
@@ -127,29 +133,29 @@ export default function ComponentShowcasePage() {
           component: (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <Avatar size="sm">
+                <Avatar className="w-8 h-8">
                   <img src="/sarah-avatar.png" alt="Small" />
                 </Avatar>
-                <Avatar size="default">
+                <Avatar className="w-10 h-10">
                   <img src="/mike-avatar.jpg" alt="Default" />
                 </Avatar>
-                <Avatar size="lg">
+                <Avatar className="w-12 h-12">
                   <img src="/images/jelli-avatar.png" alt="Large" />
                 </Avatar>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Icon icon={Heart} className="text-red-500" />
-                <Icon icon={Star} className="text-yellow-500" />
-                <Icon icon={Download} className="text-blue-500" />
-                <Icon icon={Share} className="text-green-500" />
-                <Icon icon={Settings} className="text-gray-500" />
+                <Icon as={Heart} className="text-red-500" />
+                <Icon as={Star} className="text-yellow-500" />
+                <Icon as={Download} className="text-blue-500" />
+                <Icon as={Share} className="text-green-500" />
+                <Icon as={Settings} className="text-gray-500" />
               </div>
             </div>
           ),
         },
       ],
     },
-    {
+     {
       title: "Advanced Components",
       description: "Specialized components for productivity features",
       components: [
@@ -157,8 +163,8 @@ export default function ComponentShowcasePage() {
           name: "Color & Date Pickers",
           component: (
             <div className="space-y-4 max-w-md">
-              <ColorPicker value={colorValue} onChange={setColorValue} label="Choose accent color" />
-              <DatePicker value={dateValue} onChange={setDateValue} placeholder="Select a date" />
+              <ColorPicker value={colorValue} onChange={setColorValue} />
+              <DatePicker date={dateValue} onDateChange={setDateValue} placeholder="Select a date" />
               <LanguageSwitcher />
             </div>
           ),
@@ -174,14 +180,16 @@ export default function ComponentShowcasePage() {
                   description: "Building the next generation productivity platform",
                   progress: 75,
                   dueDate: "2024-02-15",
-                  priority: "high",
                   members: [
                     { id: "1", name: "Sarah Chen", avatar: "/sarah-avatar.png" },
                     { id: "2", name: "Mike Johnson", avatar: "/mike-avatar.jpg" },
                   ],
-                  tasksCount: { total: 24, completed: 18 },
+                  totalTasks: 24,
+                  completedTasks: 18,
                   color: "#3b82f6",
+                  isOwner: true,
                 }}
+                onEdit={() => {}}
               />
             </div>
           ),
@@ -194,9 +202,8 @@ export default function ComponentShowcasePage() {
                 task={{
                   id: "1",
                   title: "Design new component library",
-                  description: "Create a comprehensive set of reusable UI components",
                   priority: "high",
-                  labels: ["Design", "Frontend"],
+                  labels: [{id: '1', name: 'Design', color: '#ec4899'}, {id: '2', name: 'Frontend', color: '#8b5cf6'}],
                   assignees: [{
                     id: "1",
                     name: "Sarah Chen",
@@ -204,8 +211,8 @@ export default function ComponentShowcasePage() {
                   }],
                   dueDate: "2024-02-10",
                   subtasks: { completed: 3, total: 5 },
-                  attachments: 2,
-                  comments: 4,
+                  attachmentsCount: 2,
+                  commentsCount: 4,
                 }}
               />
             </div>
@@ -314,15 +321,15 @@ export default function ComponentShowcasePage() {
 
           <div className="flex flex-wrap justify-center gap-3">
             <Badge variant="outline" className="bg-white/10 border-white/20">
-              <Icon icon={Eye} className="w-3 h-3 mr-1" />
+              <Icon as={Eye} className="w-3 h-3 mr-1" />
               Interactive Preview
             </Badge>
             <Badge variant="outline" className="bg-white/10 border-white/20">
-              <Icon icon={Settings} className="w-3 h-3 mr-1" />
+              <Icon as={Settings} className="w-3 h-3 mr-1" />
               Design System
             </Badge>
             <Badge variant="outline" className="bg-white/10 border-white/20">
-              <Icon icon={Star} className="w-3 h-3 mr-1" />
+              <Icon as={Star} className="w-3 h-3 mr-1" />
               Production Ready
             </Badge>
           </div>
@@ -406,8 +413,14 @@ export default function ComponentShowcasePage() {
 
       {/* Toast Demo */}
       {showToast && (
-        <Toast message="Component showcase loaded successfully!" type="success" onClose={() => setShowToast(false)} />
+        <Toast onOpenChange={setShowToast}>
+            <div className="grid gap-1">
+                <ToastTitle>Showcase Loaded</ToastTitle>
+                <ToastDescription>Component showcase loaded successfully!</ToastDescription>
+            </div>
+        </Toast>
       )}
     </div>
   )
 }
+

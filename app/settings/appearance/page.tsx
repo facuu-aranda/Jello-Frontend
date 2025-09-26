@@ -36,7 +36,7 @@ export default function AppearanceSettingsPage() {
       const y = rect.top + rect.height / 2
 
       if (newTheme === "light" || newTheme === "dark") {
-        toggleTheme({ x, y })
+        toggleTheme(event as any)
       } else {
         setTheme(newTheme)
       }

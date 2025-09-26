@@ -2,7 +2,6 @@
 
 import type * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
@@ -29,11 +28,8 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, Varian
 
 function Badge({ className, variant, ...props }: BadgeProps) {
   return (
-    <motion.div
+    <div
       className={cn(badgeVariants({ variant }), className)}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      transition={{ type: "spring", stiffness: 400, damping: 17 }}
       {...props}
     />
   )

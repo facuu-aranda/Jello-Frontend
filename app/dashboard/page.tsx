@@ -83,7 +83,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            <AssignedTasksWidget onTaskClick={(task) => setSelectedTask(task)} />
+            <AssignedTasksWidget />
             <PersonalTodoWidget />
             <RecentActivityWidget />
           </div>
