@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { MessageSquare, X } from "lucide-react"
 import { JelliChat } from "@/components/jelli-chat"
+import { AuthGuard } from "@/components/AuthGuard" 
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -72,32 +73,32 @@ export function AppLayout({ children }: AppLayoutProps) {
   )
 
   if (isMobile === undefined) {
-    return null; // Evita parpadeos y renderizado incorrecto
-  }
-
-  if (isMobile) {
-    return (
-      <div className="min-h-screen relative">
-        <AnimatedBackground />
-        <div className="relative z-10 flex flex-col h-screen">
-          <MobileHeader />
-          <main className="flex-1 p-3 sm:p-4 overflow-y-auto">{children}</main>
-        </div>
-        {ChatUI}
-      </div>
-    )
+    return null; 
   }
 
   return (
-    <div className="min-h-screen relative">
-      <AnimatedBackground />
-      <div className="relative z-10 flex h-screen w-screen overflow-hidden">
-        <Sidebar isCollapsed={isSidebarCollapsed} onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} />
-        <div className={cn("flex-1 flex flex-col min-w-0")}>
-          <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">{children}</main>
+    <AuthGuard>
+      {isMobile ? (
+        <div className="min-h-screen relative">
+          <AnimatedBackground />
+          <div className="relative z-10 flex flex-col h-screen">
+            <MobileHeader />
+            <main className="flex-1 p-3 sm:p-4 overflow-y-auto">{children}</main>
+          </div>
+          {ChatUI}
         </div>
-      </div>
-      {ChatUI}
-    </div>
+      ) : (
+        <div className="min-h-screen relative">
+          <AnimatedBackground />
+          <div className="relative z-10 flex h-screen w-screen overflow-hidden">
+            <Sidebar isCollapsed={isSidebarCollapsed} onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} isMobileView={false} />
+            <div className={cn("flex-1 flex flex-col min-w-0")}>
+              <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">{children}</main>
+            </div>
+          </div>
+          {ChatUI}
+        </div>
+      )}
+    </AuthGuard>
   )
 }

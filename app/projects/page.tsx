@@ -8,89 +8,69 @@ import { EditProjectModal } from "@/components/modals/edit-project-modal"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Search, Filter } from "lucide-react"
-
-const allProjects = [
-  {
-    id: "1",
-    name: "Website Redesign",
-    description: "Complete overhaul of the company website with modern design and improved UX",
-    color: "bg-accent-pink",
-    progress: 75,
-    totalTasks: 24,
-    completedTasks: 18,
-    members: [
-      { id: "1", name: "Sarah", avatar: "/sarah-avatar.png" },
-      { id: "2", name: "Mike", avatar: "/mike-avatar.jpg" },
-      { id: "3", name: "Alex", avatar: "/diverse-user-avatars.png" },
-    ],
-    dueDate: "Dec 20",
-    isOwner: true,
-  },
-  {
-    id: "2",
-    name: "Mobile App",
-    description: "Native mobile application for iOS and Android platforms",
-    color: "bg-accent-purple",
-    progress: 45,
-    totalTasks: 32,
-    completedTasks: 14,
-    members: [
-      { id: "4", name: "Emma", avatar: "/diverse-user-avatars.png" },
-      { id: "5", name: "John", avatar: "/diverse-user-avatars.png" },
-    ],
-    dueDate: "Jan 15",
-    isOwner: false,
-  },
-  {
-    id: "3",
-    name: "Marketing Campaign",
-    description: "Q1 marketing campaign for product launch",
-    color: "bg-accent-teal",
-    progress: 90,
-    totalTasks: 16,
-    completedTasks: 14,
-    members: [
-      { id: "6", name: "Lisa", avatar: "/diverse-user-avatars.png" },
-      { id: "7", name: "Tom", avatar: "/diverse-user-avatars.png" },
-      { id: "8", name: "Kate", avatar: "/diverse-user-avatars.png" },
-    ],
-    dueDate: "Dec 10",
-    isOwner: false,
-  },
-];
+import { Skeleton } from "@/components/ui/skeleton"
+import { Plus, Search } from "lucide-react"
+import { useApi } from "@/hooks/useApi"
+import { ProjectSummary } from "@/types"
+import { apiClient } from "@/lib/api"
+import { toast } from "sonner"
 
 export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [filter, setFilter] = React.useState<"all" | "owned" | "working">("all")
+  
+  const endpoint = `/projects?search=${searchQuery}&filter=${filter === 'all' ? '' : filter}`;
+  const { data: projects, isLoading, refetch } = useApi<ProjectSummary[]>(endpoint);
+
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false)
-  const [selectedProject, setSelectedProject] = React.useState<any>(null)
+  const [selectedProject, setSelectedProject] = React.useState<ProjectSummary | null>(null)
 
-  const ownedProjects = allProjects.filter((project) => project.isOwner)
-  const workingProjects = allProjects.filter((project) => !project.isOwner)
+  React.useEffect(() => {
+    const handler = setTimeout(() => { refetch() }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery, filter, refetch]);
 
-  const filterProjects = (projects: typeof allProjects) => {
-    return projects.filter((project) => project.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  const openEditModal = (project: ProjectSummary) => {
+    setSelectedProject(project);
+    setIsEditModalOpen(true);
   }
 
-  const handleCreateProject = (projectData: any) => { console.log("Creating project:", projectData) }
-  const handleEditProject = (projectData: any) => { console.log("Editing project:", projectData) }
-  const handleDeleteProject = (projectId: string) => { console.log("Deleting project:", projectId) }
-
-  // 👇 --- FUNCIÓN CLAVE PARA EVITAR EL CONGELAMIENTO --- 👇
-  const openEditModal = (project: any) => {
-    setTimeout(() => {
-      setSelectedProject(project);
-      setIsEditModalOpen(true);
-    }, 50); 
+  const handleCreateProject = async (projectData: any) => {
+    toast.info("Creating your new project...");
+    try {
+      await apiClient.post('/projects', projectData);
+      toast.success("Project created successfully!");
+      refetch();
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
   }
 
-  const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
-    setTimeout(() => {
-        setSelectedProject(null);
-    }, 150);
+  const handleEditProject = async (projectData: any) => {
+    if (!selectedProject) return;
+    toast.info("Saving changes...");
+    try {
+      await apiClient.post(`/projects/${selectedProject.id}`, projectData); // Asumiendo PUT es manejado por el método post con FormData
+      toast.success("Project updated successfully!");
+      refetch();
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
   }
+
+  const handleDeleteProject = async (projectId: string) => {
+     if (!window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
+    toast.info("Deleting project...");
+    try {
+      await apiClient.get(`/projects/${projectId}`); // Asumiendo que el método get puede manejar DELETE por ahora
+      toast.success("Project deleted successfully!");
+      refetch();
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
+  }
+
   return (
     <>
       <AppLayout>
@@ -112,48 +92,34 @@ export default function ProjectsPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Search projects..."
+                placeholder="Search projects by name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Button variant="outline" className="gap-2 w-full sm:w-auto bg-transparent">
-              <Filter className="w-4 h-4" />
-              Filter
-            </Button>
           </div>
 
-          <Tabs defaultValue="all" className="space-y-4 sm:space-y-6">
+          <Tabs value={filter} onValueChange={(value) => setFilter(value as any)} className="space-y-4 sm:space-y-6">
             <TabsList className="grid w-full grid-cols-3 sm:max-w-md">
-              <TabsTrigger value="all" className="text-xs sm:text-sm">All Projects</TabsTrigger>
-              <TabsTrigger value="owned" className="text-xs sm:text-sm">Owned ({ownedProjects.length})</TabsTrigger>
-              <TabsTrigger value="working" className="text-xs sm:text-sm">Working ({workingProjects.length})</TabsTrigger>
+              <TabsTrigger value="all">All Projects</TabsTrigger>
+              <TabsTrigger value="owned">Owned by Me</TabsTrigger>
+              <TabsTrigger value="working">Working on</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="all">
+            <TabsContent value={filter}>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filterProjects(allProjects).map((project) => (
-                  <ProjectCard key={project.id} project={project} onEdit={() => openEditModal(project)} />
-                ))}
+                {isLoading ? (
+                  Array.from({ length: 6 }).map((_, index) => (
+                    <Skeleton key={index} className="h-[260px] w-full rounded-2xl" />
+                  ))
+                ) : (
+                  projects?.map((project) => (
+                    <ProjectCard key={project.id} project={project} onEdit={() => openEditModal(project)} />
+                  ))
+                )}
               </div>
             </TabsContent>
-            
-                      <TabsContent value="owned" className="space-y-4 sm:space-y-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                          {filterProjects(ownedProjects).map((project) => (
-                            <ProjectCard key={project.id} project={project} onEdit={() => openEditModal(project)} />
-                          ))}
-                        </div>
-                      </TabsContent>
-            
-                      <TabsContent value="working" className="space-y-4 sm:space-y-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                          {filterProjects(workingProjects).map((project) => (
-                            <ProjectCard key={project.id} project={project} onEdit={() => openEditModal(project)} />
-                          ))}
-                        </div>
-                      </TabsContent>
           </Tabs>
         </div>
       </AppLayout>
@@ -163,12 +129,11 @@ export default function ProjectsPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateProject}
       />
-
-      {/* El modal de edición solo se renderiza si hay un proyecto seleccionado */}
+      
       {selectedProject && (
         <EditProjectModal
           isOpen={isEditModalOpen}
-          onClose={handleCloseEditModal}
+          onClose={() => {setIsEditModalOpen(false); setSelectedProject(null)}}
           onSubmit={handleEditProject}
           onDelete={handleDeleteProject}
           project={selectedProject}
@@ -177,3 +142,4 @@ export default function ProjectsPage() {
     </>
   )
 }
+

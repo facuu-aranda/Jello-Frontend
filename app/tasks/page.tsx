@@ -10,24 +10,20 @@ import { Button } from "@/components/ui/button"
 import { Search, ArrowRight } from "lucide-react"
 import { TaskModal } from "@/components/tasks/task-modal"
 import { cn } from "@/lib/utils"
+import { TaskDetails, Label, Subtask, UserSummary } from "@/types" // Importamos los tipos necesarios
 
-// CORRECCIÓN: Tipos alineados con los componentes hijos
-interface LabelData { id: string; name: string; color: string; }
-interface SubtaskData { id: string; text: string; completed: boolean; }
-interface Task {
-    id: string; title: string; description?: string;
-    status: "todo" | "in-progress" | "review" | "done";
-    priority: "low" | "medium" | "high" | "critical";
-    project: string; projectId: string; dueDate?: string;
-    subtasks: SubtaskData[];
-    comments: any[]; attachments: any[]; labels: LabelData[];
+// CORRECCIÓN: La interfaz local 'Task' ahora es compatible con 'TaskDetails'
+// al incluir la propiedad 'assignees'.
+interface Task extends TaskDetails {
+    project: string; // Añadimos 'project' que se usa en esta página
 }
 
+// CORRECCIÓN: Se añade la propiedad 'assignees' a los datos de ejemplo.
 const mockTasks: Task[] = [
-    { id: "1", title: "Design new user onboarding flow", description: "Create wireframes and mockups for the improved user onboarding experience", status: "in-progress", priority: "high", project: "Mobile App Redesign", projectId: "2", dueDate: "2025-01-14", subtasks: [{id: 's1', text: 'Define steps', completed: true}], comments: [], attachments: [], labels: [{id: "1", name: "Design", color: "#ec4899"}, {id: "2", name: "UX", color: "#8b5cf6"}] },
-    { id: "2", title: "Implement authentication system", description: "Set up JWT-based authentication with refresh tokens", status: "todo", priority: "high", project: "Backend API", projectId: "4", dueDate: "2025-01-17", subtasks: [], comments: [], attachments: [], labels: [{id: "3", name: "Backend", color: "#14b8a6"}, {id: "4", name: "Security", color: "#ef4444"}] },
-    { id: "3", title: "Write unit tests for user service", description: "Comprehensive test coverage for all user-related operations", status: "review", priority: "medium", project: "Backend API", projectId: "4", dueDate: "2025-02-01", subtasks: [], comments: [], attachments: [], labels: [{id: "5", name: "Testing", color: "#f59e0b"}, {id: "3", name: "Backend", color: "#14b8a6"}] },
-    { id: "4", title: "Update documentation", description: "Update API documentation with new endpoints", status: "done", priority: "low", project: "Documentation", projectId: "3", dueDate: "2025-02-10", subtasks: [], comments: [], attachments: [], labels: [{id: "6", name: "Docs", color: "#6b7280"}] },
+    { id: "1", title: "Design new user onboarding flow", description: "Create wireframes and mockups for the improved user onboarding experience", status: "in-progress", priority: "high", project: "Mobile App Redesign", projectId: "2", dueDate: "2025-01-14", subtasks: [], comments: [], attachments: [], labels: [{id: "1", name: "Design", color: "#ec4899"}, {id: "2", name: "UX", color: "#8b5cf6"}], assignees: [{id: '1', name: 'Sarah', avatarUrl: '/sarah-avatar.png'}] },
+    { id: "2", title: "Implement authentication system", description: "Set up JWT-based authentication with refresh tokens", status: "todo", priority: "high", project: "Backend API", projectId: "4", dueDate: "2025-01-17", subtasks: [], comments: [], attachments: [], labels: [{id: "3", name: "Backend", color: "#14b8a6"}, {id: "4", name: "Security", color: "#ef4444"}], assignees: [{id: '2', name: 'Mike', avatarUrl: '/mike-avatar.jpg'}] },
+    { id: "3", title: "Write unit tests for user service", description: "Comprehensive test coverage for all user-related operations", status: "review", priority: "medium", project: "Backend API", projectId: "4", dueDate: "2025-02-01", subtasks: [], comments: [], attachments: [], labels: [{id: "5", name: "Testing", color: "#f59e0b"}, {id: "3", name: "Backend", color: "#14b8a6"}], assignees: [] },
+    { id: "4", title: "Update documentation", description: "Update API documentation with new endpoints", status: "done", priority: "low", project: "Documentation", projectId: "3", dueDate: "2025-02-10", subtasks: [], comments: [], attachments: [], labels: [{id: "6", name: "Docs", color: "#6b7280"}], assignees: [] },
 ];
 
 const statusConfig = {

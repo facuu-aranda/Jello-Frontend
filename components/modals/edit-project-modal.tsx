@@ -13,16 +13,22 @@ import { cn } from "@/lib/utils"
 import { MemberSelector } from "@/components/forms/member-selector"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { ImageUploadField } from "@/components/forms/image-upload-field"
+import { ProjectSummary, UserSummary } from "@/types" // <-- 1. Importar el tipo global
 
-interface ProjectData {
-  id: string; name: string; description: string; color: string;
-  dueDate?: string; members: string[]; projectImageUrl?: string; bannerImageUrl?: string; isOwner: boolean;
+// 2. Definir una interfaz para los datos del formulario que puede ser diferente al de la API
+interface ProjectFormData extends Omit<ProjectSummary, 'members'> {
+    members: string[]; // En el formulario, manejamos los miembros por su ID
+    projectImageFile?: File | null;
+    bannerImageFile?: File | null;
 }
+
 interface EditProjectModalProps {
   isOpen: boolean; onClose: () => void;
-  onSubmit: (data: any) => void; onDelete: (id: string) => void;
-  project: ProjectData | null;
+  onSubmit: (data: FormData) => void; 
+  onDelete: (id: string) => void;
+  project: ProjectSummary | null;
 }
+
 const projectColors = [
     { id: 'bg-accent-pink', class: 'bg-accent-pink', selectedClass: 'ring-accent-pink' },
     { id: 'bg-accent-purple', class: 'bg-accent-purple', selectedClass: 'ring-accent-purple' },
@@ -31,24 +37,34 @@ const projectColors = [
 ];
 
 export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project }: EditProjectModalProps) {
-  const [formData, setFormData] = React.useState<ProjectData | null>(project);
+  const [formData, setFormData] = React.useState<ProjectFormData | null>(null);
 
   React.useEffect(() => {
     if (project) {
-      setFormData(project);
+      setFormData({
+        ...project,
+        members: project.members.map((m: UserSummary) => m.id), // Extraemos los IDs para el selector
+      });
     }
   }, [project]);
 
   if (!formData) return null;
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: keyof ProjectFormData, value: any) => {
     setFormData(prev => prev ? { ...prev, [field]: value } : null);
   };
 
   const handleSubmit = () => {
     if (formData) {
-      onSubmit(formData);
-      onClose();
+        const data = new FormData();
+        const { projectImageFile, bannerImageFile, ...projectData } = formData;
+        
+        data.append('data', JSON.stringify(projectData));
+        if (projectImageFile) data.append('projectImage', projectImageFile);
+        if (bannerImageFile) data.append('bannerImage', bannerImageFile);
+
+        onSubmit(data);
+        onClose();
     }
   };
   
@@ -82,8 +98,8 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project 
                 <Label htmlFor="description">Description</Label>
                 <Textarea id="description" value={formData.description} onChange={(e) => handleChange('description', e.target.value)} />
               </div>
-              <ImageUploadField label="Project Image" name="projectImage" onChange={(file) => handleChange('projectImageFile', file)} currentImageUrl={formData.projectImageUrl} />
-              <ImageUploadField label="Project Banner" name="bannerImage" onChange={(file) => handleChange('bannerImageFile', file)} currentImageUrl={formData.bannerImageUrl} />
+              <ImageUploadField label="Project Image" name="projectImage" onChange={(file) => handleChange('projectImageFile', file)} />
+              <ImageUploadField label="Project Banner" name="bannerImage" onChange={(file) => handleChange('bannerImageFile', file)} />
               <div className="space-y-2">
                 <Label>Project Color</Label>
                 <div className="flex gap-3">

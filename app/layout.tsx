@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { GeistSans } from "geist/font/sans"
 import { ThemeProvider } from "@/contexts/theme-context"
 import { Toaster } from "@/components/ui/sonner"
+import { AuthProvider } from "@/contexts/auth-context" 
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
@@ -28,8 +29,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${GeistSans.variable} ${inter.variable} font-sans`}>
         <ThemeProvider>
-          {children}
-          <Toaster />
+          <AuthProvider> 
+            {children}
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

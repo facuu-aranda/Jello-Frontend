@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+import { useAuth } from "@/contexts/auth-context" // <-- 1. Importar hook
 import { motion } from "framer-motion"
 import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,48 +11,53 @@ import { Checkbox } from "@/components/ui/checkbox"
 export function LoginForm() {
   const [showPassword, setShowPassword] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
+  const { login } = useAuth(); // <-- 2. Usar el contexto
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate login
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsLoading(false)
+    
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const rememberMe = formData.get('remember') === 'on';
+
+    try {
+      await login({ email, password, rememberMe }); // <-- 3. Llamar a la función de login
+    } catch (error) {
+      // El error ya se muestra con un toast desde el contexto
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <motion.div
       className="glass-card p-8 w-full space-y-6"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
     >
-      {/* Header */}
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
         <p className="text-muted-foreground">Sign in to your Jello account</p>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input label="Email" type="email" placeholder="Enter your email" required />
+        {/* CORREGIDO: Añadimos `name` a los inputs para que FormData funcione */}
+        <Input name="email" label="Email" type="email" placeholder="Enter your email" required />
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">Password</label>
           <div className="relative">
             <Input
+              name="password"
               type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
               className="pr-10"
               required
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
+            <Button type="button" variant="ghost" size="icon"
               className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-              onClick={() => setShowPassword(!showPassword)}
-            >
+              onClick={() => setShowPassword(!showPassword)}>
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           </div>
@@ -60,14 +65,9 @@ export function LoginForm() {
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Checkbox id="remember" />
-            <label htmlFor="remember" className="text-sm text-muted-foreground">
-              Remember me
-            </label>
+            <Checkbox id="remember" name="remember" />
+            <label htmlFor="remember" className="text-sm text-muted-foreground">Remember me</label>
           </div>
-          <Link href="/forgot-password" className="text-sm text-primary hover:underline">
-            Forgot password?
-          </Link>
         </div>
 
         <Button type="submit" className="w-full" disabled={isLoading}>
@@ -119,9 +119,6 @@ export function LoginForm() {
       {/* Footer */}
       <p className="text-center text-sm text-muted-foreground">
         Don't have an account?{" "}
-        <Link href="/register" className="text-primary hover:underline font-medium">
-          Sign up
-        </Link>
       </p>
     </motion.div>
   )

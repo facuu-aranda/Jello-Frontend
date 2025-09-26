@@ -1,5 +1,8 @@
 Reporte de Errores de TypeScript para el proyecto: C:\Users\LAPTOP\Desktop\Work\Jello-App\Jello-Frontend
-Generado el: 26/9/2025, 7:49:48
+Generado el: 26/9/2025, 16:48:56
 ================================================================================
 
-✅ ¡Excelente! No se encontraron errores de TypeScript en el proyecto.
+Listado de errores encontrados:
+
+app/search/page.tsx(59,35): error TS2322: Type 'import("C:/Users/LAPTOP/Desktop/Work/Jello-App/Jello-Frontend/types/index").SearchResult' is not assignable to type 'import("C:/Users/LAPTOP/Desktop/Work/Jello-App/Jello-Frontend/components/modals/DetailModal").SearchResult'.
+  Property 'description' is missing in type 'UserProfile & { type: "user"; }' but required in type 'SearchResult'.

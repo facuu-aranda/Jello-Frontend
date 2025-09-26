@@ -7,17 +7,34 @@ import { Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useAuth } from "@/contexts/auth-context" // 1. Importamos el hook
 
 export function RegisterForm() {
   const [showPassword, setShowPassword] = React.useState(false)
   const [isLoading, setIsLoading] = React.useState(false)
+  const { register } = useAuth(); // 2. Obtenemos la función de registro
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate registration
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsLoading(false)
+
+    const formData = new FormData(e.currentTarget)
+    const firstName = formData.get('firstName') as string;
+    const lastName = formData.get('lastName') as string;
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    // El backend espera un solo campo 'name'
+    const name = `${firstName} ${lastName}`;
+
+    try {
+      // 3. Llamamos a la función de registro del contexto
+      await register({ name, email, password });
+    } catch (error) {
+      // El error se maneja y muestra mediante un toast en el AuthContext
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -35,17 +52,19 @@ export function RegisterForm() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* CORREGIDO: Añadimos 'name' a los inputs para FormData */}
         <div className="grid grid-cols-2 gap-3">
-          <Input label="First name" placeholder="John" required />
-          <Input label="Last name" placeholder="Doe" required />
+          <Input name="firstName" label="First name" placeholder="John" required />
+          <Input name="lastName" label="Last name" placeholder="Doe" required />
         </div>
 
-        <Input label="Email" type="email" placeholder="john@example.com" required />
+        <Input name="email" label="Email" type="email" placeholder="john@example.com" required />
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">Password</label>
           <div className="relative">
             <Input
+              name="password"
               type={showPassword ? "text" : "password"}
               placeholder="Create a strong password"
               className="pr-10"
@@ -65,7 +84,7 @@ export function RegisterForm() {
         </div>
 
         <div className="flex items-start space-x-2">
-          <Checkbox id="terms" className="mt-1" />
+          <Checkbox id="terms" required />
           <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
             I agree to the{" "}
             <Link href="/terms" className="text-primary hover:underline">

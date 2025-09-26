@@ -6,11 +6,17 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { TaskCard } from "@/components/tasks/task-card"
 import { cn } from "@/lib/utils"
+import { TaskSummary } from "@/types" // Importamos el tipo
 
 interface KanbanColumnProps {
-  column: any;
-  onTaskView?: (task: any) => void;
-  onTaskEdit?: (task: any) => void;
+  column: {
+    id: string;
+    title: string;
+    color: string;
+    tasks: TaskSummary[];
+  };
+  onTaskView?: (task: TaskSummary) => void;
+  onTaskEdit?: (task: TaskSummary) => void;
   onAddTask?: (columnId: string) => void;
 }
 
@@ -22,7 +28,6 @@ export function KanbanColumn({ column, onTaskView, onTaskEdit, onAddTask }: Kanb
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Column Header */}
       <div className="glass-card p-4 mb-4 rounded-2xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -46,23 +51,18 @@ export function KanbanColumn({ column, onTaskView, onTaskEdit, onAddTask }: Kanb
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>Edit column</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onAddTask?.(column.id)}>Add task</DropdownMenuItem>
-                <DropdownMenuItem>Clear completed</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">Delete column</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
       </div>
 
-      {/* Tasks List */}
-      <div className="flex-1 space-y-3 overflow-y-auto">
-        {column.tasks.map((task: any, index: number) => (
-          <motion.div key={task.id} /* ... */>
+      <div className="flex-1 space-y-3 overflow-y-auto pr-2">
+        {column.tasks.map((task: TaskSummary, index: number) => (
+          <motion.div key={task.id} initial={{ opacity: 0 }} animate={{ opacity: 1}} transition={{ delay: index * 0.05 }}>
             <TaskCard task={task} onView={() => onTaskView?.(task)} onEdit={() => onTaskEdit?.(task)} />
           </motion.div>
         ))}
-
-        {/* Add Task Button */}
         <motion.button
           className="w-full p-4 border-2 border-dashed border-border rounded-2xl text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
           onClick={() => onAddTask?.(column.id)}

@@ -8,51 +8,87 @@ import { CreateTaskModal } from "@/components/modals/create-task-modal"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Settings, Users, Filter } from "lucide-react"
-import { ActivityItem } from "@/components/activity/ActivityItem"
-
-const mockProject = {
-  id: "1",
-  name: "Website Redesign",
-  description: "Complete overhaul of the company website with modern design and improved UX",
-  members: [
-    { id: "1", name: "Sarah", avatar: "/sarah-avatar.png" },
-    { id: "2", name: "Mike", avatar: "/mike-avatar.jpg" },
-    { id: "3", name: "Alex", avatar: "/diverse-user-avatars.png" },
-    { id: "4", name: "Emma", avatar: "/diverse-user-avatars.png" },
-  ],
-  isOwner: true,
-}
-
-const mockProjectActivities = [
-  { id: 1, type: "comment", user: { name: "Sarah", avatar: "/sarah-avatar.png" }, action: "commented on", target: "Update homepage design", time: "2 minutes ago", projectId: 1 },
-  { id: 4, type: "document", user: { name: "You", avatar: "/diverse-user-avatars.png" }, action: "uploaded", target: "API Documentation.pdf", time: "Yesterday", projectId: 1 },
-];
+import { Settings, Users, Filter, AlertTriangle } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useApi } from "@/hooks/useApi"
+import { ProjectDetails, TaskDetails, TaskSummary } from "@/types"
+import { apiClient } from "@/lib/api"
+import { toast } from "sonner"
 
 export default function ProjectPage({ params }: { params: { projectId: string } }) {
-  const [selectedTask, setSelectedTask] = React.useState<any | null>(null)
-  const [modalMode, setModalMode] = React.useState<"view" | "edit">("view");
+  const { data: project, isLoading, error, refetch } = useApi<ProjectDetails>(`/projects/${params.projectId}`);
+  
+  const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null)
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = React.useState(false)
   const [selectedColumnId, setSelectedColumnId] = React.useState<string | null>(null)
 
-  const handleTaskView = (task: any) => {
-    setModalMode("view");
-    setSelectedTask(task);
-  }
-
-  const handleTaskEdit = (task: any) => {
-    setModalMode("edit");
-    setSelectedTask(task);
+  const handleTaskView = async (taskSummary: TaskSummary) => {
+    try {
+      toast.info("Loading task details...");
+      const taskDetails = await apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`);
+      setSelectedTask(taskDetails);
+      toast.dismiss();
+    } catch (error) {
+      toast.error("Failed to load task details.");
+    }
   }
 
   const handleAddTask = (columnId: string) => {
     setSelectedColumnId(columnId)
     setIsCreateTaskModalOpen(true)
   }
+  
+  const handleCreateTask = async (taskData: any) => { 
+    toast.info("Creating task...");
+    try {
+      await apiClient.post('/tasks', { ...taskData, project: params.projectId });
+      toast.success("Task created successfully!");
+      refetch();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+  
+  const handleUpdateTask = async (taskData: Partial<TaskDetails>) => { 
+    if (!selectedTask) return;
+    toast.info("Saving changes...");
+    try {
+      await apiClient.put(`/tasks/${selectedTask.id}`, taskData);
+      toast.success("Task updated!");
+      refetch();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
 
-  const handleCreateTask = (taskData: any) => { console.log("Creating task:", taskData) }
-  const handleUpdateTask = (taskData: any) => { console.log("Updating task:", taskData) }
-  const handleDeleteTask = (taskId: string) => { console.log("Deleting task:", taskId) }
+  const handleDeleteTask = async (taskId: string) => { 
+    if (!window.confirm("Are you sure you want to delete this task?")) return;
+    toast.info("Deleting task...");
+    try {
+        await apiClient.del(`/tasks/${taskId}`);
+        toast.success("Task deleted!");
+        refetch();
+    } catch (err) {
+        toast.error((err as Error).message);
+    }
+  }
+
+  if (isLoading) {
+    return <AppLayout><Skeleton className="h-full w-full rounded-2xl" /></AppLayout>
+  }
+
+  if (error || !project) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center h-full text-center">
+          <AlertTriangle className="w-16 h-16 text-destructive mb-4" />
+          <h2 className="text-2xl font-bold">Error Loading Project</h2>
+          <p className="text-muted-foreground">{error || "The project could not be found."}</p>
+          <Button onClick={refetch} className="mt-6">Try Again</Button>
+        </div>
+      </AppLayout>
+    )
+  }
 
   return (
     <AppLayout>
@@ -61,19 +97,19 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-foreground">{mockProject.name}</h1>
-                {mockProject.isOwner && (
+                <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
+                {project.isOwner && (
                   <Badge variant="secondary" className="text-xs">Owner</Badge>
                 )}
               </div>
-              <p className="text-muted-foreground">{mockProject.description}</p>
+              <p className="text-muted-foreground">{project.description}</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
                 <div className="flex -space-x-2">
-                  {mockProject.members.slice(0, 4).map((member) => (
+                  {project.members.slice(0, 4).map((member) => (
                     <Avatar key={member.id} className="w-8 h-8 border-2 border-background">
-                      <AvatarImage src={member.avatar} alt={member.name} />
+                      <AvatarImage src={member.avatarUrl || undefined} alt={member.name} />
                       <AvatarFallback className="text-xs">{member.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                   ))}
@@ -88,23 +124,17 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
           </div>
         </div>
         <div className="flex-1 overflow-hidden">
-          <KanbanBoard onTaskView={handleTaskView} onTaskEdit={handleTaskEdit} onAddTask={handleAddTask} />
+          <KanbanBoard project={project} onTaskView={handleTaskView} onAddTask={handleAddTask} />
         </div>
-        <div className="flex-shrink-0 px-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
-          <div className="glass-card p-4 rounded-2xl space-y-2">
-            {mockProjectActivities.map((activity, index) => (
-              <ActivityItem key={activity.id} activity={activity} index={index} />
-            ))}
-          </div>
-        </div>
+        
         <TaskModal
           isOpen={!!selectedTask}
           onClose={() => setSelectedTask(null)}
           task={selectedTask}
-          mode={modalMode}
+          mode="view"
           onSubmit={handleUpdateTask}
           onDelete={handleDeleteTask}
+          onDataChange={refetch}
         />
         <CreateTaskModal
           isOpen={isCreateTaskModalOpen}
@@ -117,3 +147,4 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     </AppLayout>
   )
 }
+

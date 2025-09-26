@@ -8,70 +8,27 @@ import { PersonalTodoWidget } from "@/components/dashboard/personal-todo-widget"
 import { RecentActivityWidget } from "@/components/dashboard/recent-activity-widget"
 import { ProjectCard } from "@/components/project-card"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Plus } from "lucide-react"
 import { TaskModal } from "@/components/tasks/task-modal"
-import { CreateProjectModal } from "@/components/modals/create-project-modal"
-
-const recentProjects = [
-  {
-    id: "1",
-    name: "Website Redesign",
-    description: "Complete overhaul of the company website with modern design and improved UX",
-    color: "bg-accent-pink",
-    progress: 75,
-    totalTasks: 24,
-    completedTasks: 18,
-    members: [
-      { id: "1", name: "Sarah", avatar: "/sarah-avatar.png" },
-      { id: "2", name: "Mike", avatar: "/mike-avatar.jpg" },
-      { id: "3", name: "Alex", avatar: "/diverse-user-avatars.png" },
-    ],
-    dueDate: "Dec 20",
-    isOwner: true,
-  },
-  {
-    id: "2",
-    name: "Mobile App",
-    description: "Native mobile application for iOS and Android platforms",
-    color: "bg-accent-purple",
-    progress: 45,
-    totalTasks: 32,
-    completedTasks: 14,
-    members: [
-      { id: "4", name: "Emma", avatar: "/diverse-user-avatars.png" },
-      { id: "5", name: "John", avatar: "/diverse-user-avatars.png" },
-    ],
-    dueDate: "Jan 15",
-    isOwner: false,
-  },
-  {
-    id: "3",
-    name: "Marketing Campaign",
-    description: "Q1 marketing campaign for product launch",
-    color: "bg-accent-teal",
-    progress: 90,
-    totalTasks: 16,
-    completedTasks: 14,
-    members: [
-      { id: "6", name: "Lisa", avatar: "/diverse-user-avatars.png" },
-      { id: "7", name: "Tom", avatar: "/diverse-user-avatars.png" },
-      { id: "8", name: "Kate", avatar: "/diverse-user-avatars.png" },
-    ],
-    dueDate: "Dec 10",
-    isOwner: false,
-  },
-]
+import { useApi } from "@/hooks/useApi"
+import { ProjectSummary } from "@/types"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const { data: recentProjects, isLoading: isLoadingProjects } = useApi<ProjectSummary[]>('/projects?limit=3');
   const [selectedTask, setSelectedTask] = React.useState<any | null>(null);
 
-  return (
+  return (
     <>
       <AppLayout>
         <div className="space-y-6 sm:space-y-8">
           <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Good morning, John!</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                Good morning, {user?.name.split(' ')[0] || 'User'}!
+              </h1>
               <p className="text-sm sm:text-base text-muted-foreground">
                 Here's what's happening with your projects today.
               </p>
@@ -96,9 +53,15 @@ export default function DashboardPage() {
               </Button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                {recentProjects.map((project) => (
-                    <ProjectCard key={project.id} project={project} onEdit={() => {}} />
-                ))}
+              {isLoadingProjects ? (
+                Array.from({ length: 3 }).map((_, index) => (
+                  <Skeleton key={index} className="h-[260px] w-full rounded-2xl" />
+                ))
+              ) : (
+                recentProjects?.map((project) => (
+                  <ProjectCard key={project.id} project={project} onEdit={() => {}} />
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -111,5 +74,6 @@ export default function DashboardPage() {
         showGoToProjectButton={true}
       />
     </>
-  )
+  )
 }
+
