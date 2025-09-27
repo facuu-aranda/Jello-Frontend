@@ -1,13 +1,14 @@
+// components/dashboard/assigned-tasks-widget.tsx
+
 "use client"
 
-import * as React from "react" // NUEVO: Importar React completo
+import * as React from "react"
 import { motion } from "framer-motion"
 import Link from "next/link" 
 import { Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-// --- NUEVO: Imports necesarios ---
 import { useApi } from "@/hooks/useApi"
 import { TaskSummary, TaskDetails } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -23,7 +24,6 @@ const priorityConfig = {
 }
 
 export function AssignedTasksWidget() {
-  // --- NUEVO: Llamada a la API y estado para el modal ---
   const { data: tasks, isLoading, refetch } = useApi<TaskSummary[]>('/tasks/my-tasks?limit=3');
   const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -48,7 +48,6 @@ export function AssignedTasksWidget() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h3 className="text-lg font-semibold text-foreground">My Tasks</h3>
@@ -59,7 +58,6 @@ export function AssignedTasksWidget() {
           </Button>
         </div>
 
-        {/* --- MODIFICADO: Lógica para mostrar Skeletons o Tareas Reales --- */}
         <div className="space-y-4">
           {isLoading ? (
             Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-16 w-full rounded-xl" />)
@@ -67,19 +65,21 @@ export function AssignedTasksWidget() {
             tasks?.map((task, index) => (
               <motion.div
                 key={task.id}
-                className="flex flex-wrap items-center gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
+                className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
                 initial={{ opacity: 0}}
                 animate={{ opacity: 1}}
                 transition={{ delay: index * 0.1 }}
                 onClick={() => handleTaskView(task)}
               >
                 <div
-                  className={`w-3 h-3 rounded-full ${priorityConfig[task.priority as keyof typeof priorityConfig].color}`}
+                  className={`w-3 h-3 rounded-full flex-shrink-0 ${priorityConfig[task.priority as keyof typeof priorityConfig].color}`}
                 />
-                <div className="flex-1 space-y-1">
-                  <h4 className="font-medium text-foreground">{task.title}</h4>
+                {/* --- MODIFICADO: Se añade 'min-w-0' para permitir el truncado --- */}
+                <div className="flex-1 space-y-1 min-w-0">
+                  {/* --- MODIFICADO: Se añade la clase 'truncate' al título --- */}
+                  <h4 className="font-medium text-foreground truncate">{task.title}</h4>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span>{task.projectId}</span> {/* Ajustar si el backend envía el nombre del proyecto */}
+                    <span className="truncate">{task.projectId}</span>
                   </div>
                 </div>
                 <div className="flex gap-3 items-center text-xs text-muted-foreground">
@@ -101,8 +101,7 @@ export function AssignedTasksWidget() {
           )}
         </div>
       </motion.div>
-      
-      {/* --- NUEVO: Modal para ver detalles de la tarea --- */}
+
       <TaskModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

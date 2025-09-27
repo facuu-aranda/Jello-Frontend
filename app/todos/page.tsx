@@ -127,6 +127,34 @@ export default function PersonalTodosPage() {
         </div>
 
         <div className="glass-card p-4 rounded-2xl">
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-foreground">Category:</span>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-foreground">Priority:</span>
+                <Select value={filterPriority} onValueChange={setFilterPriority}>
+                  <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>{priorities.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox id="show-completed" checked={showCompleted} onCheckedChange={(checked) => setShowCompleted(Boolean(checked))} />
+                <Label htmlFor="show-completed" className="text-sm">Show completed</Label>
+              </div>
+              <div className="flex-grow flex justify-end">
+              <Button variant={isManaging ? "destructive" : "outline"} onClick={() => setIsManaging(!isManaging)}>
+                  {isManaging ? "Done" : "Manage"}
+                </Button>
+              </div>
+            </div>
+        </div>
+
+        <div className="glass-card p-4 rounded-2xl">
           <AnimatePresence mode="wait">
             {isAdding ? (
               <motion.div key="form" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: "easeInOut" }} className="overflow-hidden">
@@ -164,34 +192,6 @@ export default function PersonalTodosPage() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
-
-        <div className="glass-card p-4 rounded-2xl">
-            <div className="flex flex-wrap gap-4 items-center">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">Category:</span>
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">Priority:</span>
-                <Select value={filterPriority} onValueChange={setFilterPriority}>
-                  <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>{priorities.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox id="show-completed" checked={showCompleted} onCheckedChange={(checked) => setShowCompleted(Boolean(checked))} />
-                <Label htmlFor="show-completed" className="text-sm">Show completed</Label>
-              </div>
-              <div className="flex-grow flex justify-end">
-              <Button variant={isManaging ? "destructive" : "outline"} onClick={() => setIsManaging(!isManaging)}>
-                  {isManaging ? "Done" : "Manage"}
-                </Button>
-              </div>
-            </div>
         </div>
 
         {isLoading ? (

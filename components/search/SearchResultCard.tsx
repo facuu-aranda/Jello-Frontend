@@ -87,8 +87,13 @@ export function SearchResultCard({ result }: SearchResultCardProps) {
 />
       )}
       {result.type === 'project' && (
-        <CollaborateModal isOpen={isCollaborateModalOpen} onClose={() => setCollaborateModalOpen(false)} projectName={result.name} />
-      )}
+  <CollaborateModal 
+    isOpen={isCollaborateModalOpen} 
+    onClose={() => setCollaborateModalOpen(false)} 
+    projectName={result.name}
+    projectId={result.id} 
+  />
+)}
     </>
   )
 }

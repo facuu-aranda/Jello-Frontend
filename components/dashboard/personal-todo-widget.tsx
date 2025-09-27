@@ -108,7 +108,7 @@ export function PersonalTodoWidget() {
                   checked={todo.completed} 
                   onCheckedChange={(checked) => toggleTodo(todo.id, !!checked)} 
                 />
-                <span className={`flex-1 text-sm ${todo.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                <span className={`flex-1 text-sm truncate ${todo.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
                   {todo.text}
                 </span>
                 <Button 

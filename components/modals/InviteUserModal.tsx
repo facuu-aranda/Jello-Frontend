@@ -1,17 +1,17 @@
+// components/modals/InviteUserModal.tsx
+
 "use client"
 
 import * as React from "react"
-import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription } from "@/components/ui/modal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { UserSummary } from "@/types"
-// Mock de proyectos del usuario para el selector
-const userProjects = [
-  { id: "1", name: "Website Redesign" },
-  { id: "4", name: "Backend API" },
-]
+import { UserSummary, ProjectSummary } from "@/types"
+// --- NUEVO: Imports necesarios ---
+import { useApi } from "@/hooks/useApi"
+import { apiClient } from "@/lib/api"
+import { toast } from "sonner"
 
 interface InviteUserModalProps {
   isOpen: boolean
@@ -22,10 +22,25 @@ interface InviteUserModalProps {
 export function InviteUserModal({ isOpen, onClose, user }: InviteUserModalProps) {
   const [selectedProject, setSelectedProject] = React.useState("")
 
-  const handleInvite = () => {
-    if (!selectedProject) return;
-    console.log(`Inviting ${user.name} to project ID ${selectedProject}`);
-    onClose();
+  // --- NUEVO: Obtenemos los proyectos reales del usuario para el dropdown ---
+  const { data: userProjects, isLoading } = useApi<ProjectSummary[]>('/projects?filter=owned');
+
+  // --- MODIFICADO: La función ahora llama a la API ---
+  const handleInvite = async () => {
+    if (!selectedProject) {
+        toast.error("Please select a project.");
+        return;
+    };
+
+    toast.info(`Inviting ${user.name} to the project...`);
+    try {
+      // El backend espera el ID del usuario a invitar en el cuerpo de la petición
+      await apiClient.post(`/projects/${selectedProject}/invitations`, { userIdToInvite: user.id });
+      toast.success(`Invitation sent to ${user.name}!`);
+      onClose();
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
   }
 
   return (
@@ -45,11 +60,11 @@ export function InviteUserModal({ isOpen, onClose, user }: InviteUserModalProps)
         </ModalHeader>
         <div className="p-6 space-y-4">
           <Select value={selectedProject} onValueChange={setSelectedProject}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choose a project..." />
+            <SelectTrigger disabled={isLoading}>
+              <SelectValue placeholder={isLoading ? "Loading projects..." : "Choose a project..."} />
             </SelectTrigger>
             <SelectContent>
-              {userProjects.map((project) => (
+              {userProjects?.map((project) => (
                 <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
               ))}
             </SelectContent>

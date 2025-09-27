@@ -1,3 +1,5 @@
+// app/dashboard/page.tsx
+
 "use client"
 
 import * as React from "react"
@@ -12,18 +14,34 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Plus } from "lucide-react"
 import { TaskModal } from "@/components/tasks/task-modal"
 import { useApi } from "@/hooks/useApi"
-import { ProjectSummary } from "@/types"
+import { ProjectSummary, TaskDetails } from "@/types"
 import { useAuth } from "@/contexts/auth-context"
+import { apiClient } from "@/lib/api"
+import { toast } from "sonner"
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { data: recentProjects, isLoading: isLoadingProjects } = useApi<ProjectSummary[]>('/projects?limit=3');
-  const [selectedTask, setSelectedTask] = React.useState<any | null>(null);
+  const { data: recentProjects, isLoading: isLoadingProjects, refetch: refetchProjects } = useApi<ProjectSummary[]>('/projects?limit=3');
+  const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+
+  const handleTaskView = async (taskSummary: any) => {
+    try {
+      toast.info("Loading task details...");
+      const taskDetails = await apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`);
+      setSelectedTask(taskDetails);
+      setIsModalOpen(true);
+      toast.dismiss();
+    } catch (error) {
+      toast.error("Failed to load task details.");
+    }
+  }
 
   return (
     <>
       <AppLayout>
-        <div className="space-y-6 sm:space-y-8">
+        {/* --- MODIFICADO: Se añade un contenedor para centrar y limitar el ancho --- */}
+        <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
           <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
             <div className="space-y-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
@@ -44,7 +62,7 @@ export default function DashboardPage() {
             <PersonalTodoWidget />
             <RecentActivityWidget />
           </div>
-          
+
           <div className="space-y-4 sm:space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg sm:text-xl font-semibold text-foreground">Recent Projects</h2>
@@ -68,12 +86,12 @@ export default function DashboardPage() {
       </AppLayout>
 
       <TaskModal
-        isOpen={!!selectedTask}
-        onClose={() => setSelectedTask(null)}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         task={selectedTask}
+        onDataChange={refetchProjects}
         showGoToProjectButton={true}
       />
     </>
   )
 }
-
