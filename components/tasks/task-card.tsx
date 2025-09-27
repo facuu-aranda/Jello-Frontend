@@ -1,13 +1,12 @@
 "use client"
 import { motion } from "framer-motion"
-import { Calendar, Edit, MessageSquare, Paperclip } from "lucide-react" // Añadimos iconos
+import { Calendar, Edit, MessageSquare, Paperclip } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 
-// CORREGIDO: Definimos tipos explícitos para las props para evitar 'any'
 interface Label { id: string; name: string; color: string; }
 interface Assignee { id: string; name: string; avatar?: string; }
 interface SubtasksInfo { completed: number; total: number; }
@@ -35,7 +34,6 @@ const priorityConfig = {
 }
 
 export function TaskCard({ task, onView, onEdit, isDragging }: TaskCardProps) {
-  // CORREGIDO: Extraemos los contadores con valores por defecto
   const { subtasks, commentsCount = 0, attachmentsCount = 0 } = task;
   const subtasksCompleted = subtasks?.completed ?? 0;
   const subtasksTotal = subtasks?.total ?? 0;
@@ -63,7 +61,7 @@ export function TaskCard({ task, onView, onEdit, isDragging }: TaskCardProps) {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2 flex-wrap">
             <div className={cn("w-2 h-2 rounded-full", priorityConfig[task.priority]?.bg)} />
-            {task.labels?.slice(0, 2).map((label) => (
+            {(task.labels || []).slice(0, 2).map((label) => (
               <Badge key={label.id} variant="secondary" className="text-xs px-2 py-0" style={{ backgroundColor: label.color + "20", color: label.color }}>{label.name}</Badge>
             ))}
           </div>
@@ -85,7 +83,8 @@ export function TaskCard({ task, onView, onEdit, isDragging }: TaskCardProps) {
             {attachmentsCount > 0 && <div className="flex items-center gap-1"><Paperclip className="w-3 h-3" /><span>{attachmentsCount}</span></div>}
           </div>
           <div className="flex -space-x-1">
-            {task.assignees?.map((assignee) => (
+            {/* CORRECCIÓN: Se añade '|| []' para evitar el error si 'assignees' es undefined */}
+            {(task.assignees || []).map((assignee) => (
               <Avatar key={assignee.id} className="w-6 h-6 border-2 border-background">
                 <AvatarImage src={assignee.avatar} alt={assignee.name} />
                 <AvatarFallback className="text-xs">{assignee.name.charAt(0)}</AvatarFallback>

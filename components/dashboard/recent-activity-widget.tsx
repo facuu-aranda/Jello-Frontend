@@ -4,15 +4,15 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { ActivityItem } from "@/components/activity/ActivityItem"
 import { Button } from "@/components/ui/button"
-
-const activities = [
-  { id: 1, type: "comment", user: { name: "Sarah", avatar: "/sarah-avatar.png" }, action: "commented on", target: "Update homepage design", time: "2 minutes ago", projectId: 1 },
-  { id: 2, type: "completion", user: { name: "Mike", avatar: "/mike-avatar.jpg" }, action: "completed", target: "Fix login bug", time: "1 hour ago", projectId: 2 },
-  { id: 3, type: "join", user: { name: "Alex", avatar: "/diverse-user-avatars.png" }, action: "joined project", target: "Mobile App", time: "3 hours ago", projectId: 2 },
-  { id: 4, type: "document", user: { name: "You", avatar: "/diverse-user-avatars.png" }, action: "uploaded", target: "API Documentation.pdf", time: "Yesterday", projectId: 1 },
-]
+// --- NUEVO: Imports necesarios ---
+import { useApi } from "@/hooks/useApi"
+import { Activity } from "@/types"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function RecentActivityWidget() {
+  // --- NUEVO: Llamada a la API para obtener datos reales ---
+  const { data: activities, isLoading } = useApi<Activity[]>('/activity/recent?limit=4');
+
   return (
     <motion.div
       className="glass-card p-6 space-y-4 flex flex-col"
@@ -26,9 +26,23 @@ export function RecentActivityWidget() {
       </div>
 
       <div className="flex-grow space-y-1 -mx-3">
-        {activities.map((activity, index) => (
-          <ActivityItem key={activity.id} activity={activity} index={index} />
-        ))}
+        {/* --- MODIFICADO: Lógica para mostrar estado de carga o datos reales --- */}
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="flex items-center gap-3 p-4">
+              <Skeleton className="w-8 h-8 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/4" />
+              </div>
+              <Skeleton className="w-8 h-8 rounded-full" />
+            </div>
+          ))
+        ) : (
+          activities?.map((activity, index) => (
+            <ActivityItem key={activity.id} activity={activity} index={index} />
+          ))
+        )}
       </div>
     </motion.div>
   )

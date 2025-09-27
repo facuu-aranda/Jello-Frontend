@@ -1,38 +1,19 @@
 "use client"
 
+import * as React from "react" // NUEVO: Importar React completo
 import { motion } from "framer-motion"
 import Link from "next/link" 
-import { CheckCircle, Clock, AlertCircle } from "lucide-react"
+import { Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-
-const tasks = [
-  {
-    id: 1,
-    title: "Update homepage design",
-    project: "Website Redesign",
-    priority: "high",
-    dueDate: "Today",
-    assignee: { name: "Sarah", avatar: "/sarah-avatar.png" },
-  },
-  {
-    id: 2,
-    title: "Fix login authentication bug",
-    project: "Mobile App",
-    priority: "critical",
-    dueDate: "Tomorrow",
-    assignee: { name: "Mike", avatar: "/mike-avatar.jpg" },
-  },
-  {
-    id: 3,
-    title: "Write API documentation",
-    project: "Backend API",
-    priority: "medium",
-    dueDate: "Dec 15",
-    assignee: { name: "You", avatar: "/diverse-user-avatars.png" },
-  },
-]
+// --- NUEVO: Imports necesarios ---
+import { useApi } from "@/hooks/useApi"
+import { TaskSummary, TaskDetails } from "@/types"
+import { Skeleton } from "@/components/ui/skeleton"
+import { TaskModal } from "@/components/tasks/task-modal"
+import { apiClient } from "@/lib/api"
+import { toast } from "sonner"
 
 const priorityConfig = {
   low: { color: "bg-green-500", variant: "secondary" as const },
@@ -42,84 +23,93 @@ const priorityConfig = {
 }
 
 export function AssignedTasksWidget() {
+  // --- NUEVO: Llamada a la API y estado para el modal ---
+  const { data: tasks, isLoading, refetch } = useApi<TaskSummary[]>('/tasks/my-tasks?limit=3');
+  const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+
+  const handleTaskView = async (taskSummary: TaskSummary) => {
+    try {
+      toast.info("Loading task details...");
+      const taskDetails = await apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`);
+      setSelectedTask(taskDetails);
+      setIsModalOpen(true);
+      toast.dismiss();
+    } catch (error) {
+      toast.error("Failed to load task details.");
+    }
+  }
+
   return (
-    <motion.div
-      className="glass-card p-6 space-y-6"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold text-foreground">My Tasks</h3>
-          <p className="text-sm text-muted-foreground">Tasks assigned to you across all projects</p>
+    <>
+      <motion.div
+        className="glass-card p-6 space-y-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h3 className="text-lg font-semibold text-foreground">My Tasks</h3>
+            <p className="text-sm text-muted-foreground">Tasks assigned to you across all projects</p>
+          </div>
+          <Button variant="ghost" size="sm" asChild>
+             <Link href="/tasks">View all</Link>
+          </Button>
         </div>
-        <Button variant="ghost" size="sm">
-           <Link href="/tasks">View all</Link>
-        </Button>
-      </div>
 
-      {/* Tasks List */}
-      <div className="space-y-4">
-        {tasks.map((task, index) => (
-          <motion.div
-            key={task.id}
-            className="flex flex-wrap items-center gap-4 p-3 rounded-xl hover:bg-accent/50 transition-colors cursor-pointer"
-            initial={{ opacity: 0}}
-            animate={{ opacity: 1}}
-            transition={{ delay: index * 0.1 }}
-          >
-            {/* Priority Indicator */}
-            <div
-              className={`w-3 h-3 rounded-full ${priorityConfig[task.priority as keyof typeof priorityConfig].color}`}
-            />
-
-            {/* Content */}
-            <div className="flex-1 space-y-1">
-              <h4 className="font-medium text-foreground">{task.title}</h4>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>{task.project}</span>
-              </div>
-            </div>
-
-            {/* Priority Badge */}
-            <div className="flex gap-3 content-end">
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  <span>{task.dueDate}</span>
+        {/* --- MODIFICADO: Lógica para mostrar Skeletons o Tareas Reales --- */}
+        <div className="space-y-4">
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-16 w-full rounded-xl" />)
+          ) : (
+            tasks?.map((task, index) => (
+              <motion.div
+                key={task.id}
+                className="flex flex-wrap items-center gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
+                initial={{ opacity: 0}}
+                animate={{ opacity: 1}}
+                transition={{ delay: index * 0.1 }}
+                onClick={() => handleTaskView(task)}
+              >
+                <div
+                  className={`w-3 h-3 rounded-full ${priorityConfig[task.priority as keyof typeof priorityConfig].color}`}
+                />
+                <div className="flex-1 space-y-1">
+                  <h4 className="font-medium text-foreground">{task.title}</h4>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{task.projectId}</span> {/* Ajustar si el backend envía el nombre del proyecto */}
+                  </div>
                 </div>
-                <span>•</span>
-            <Badge
-            
-              variant={priorityConfig[task.priority as keyof typeof priorityConfig].variant}
-              className="capitalize"
-            >
-              {task.priority}
-            </Badge>
-
-            {/* Assignee */}
-            <Avatar className="w-6 h-6">
-              <AvatarImage src={task.assignee.avatar || "/placeholder.svg"} alt={task.assignee.name} />
-              <AvatarFallback className="text-xs">{task.assignee.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
-        <Button variant="outline" size="sm" className="flex-1 bg-transparent">
-          <CheckCircle className="w-4 h-4 mr-2" />
-          Mark Complete
-        </Button>
-        <Button variant="outline" size="sm" className="flex-1 bg-transparent">
-          <AlertCircle className="w-4 h-4 mr-2" />
-          Need Help
-        </Button>
-      </div>
-    </motion.div>
+                <div className="flex gap-3 items-center text-xs text-muted-foreground">
+                    {task.dueDate && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                    <Badge
+                      variant={priorityConfig[task.priority as keyof typeof priorityConfig].variant}
+                      className="capitalize"
+                    >
+                      {task.priority}
+                    </Badge>
+                </div>
+              </motion.div>
+            ))
+          )}
+        </div>
+      </motion.div>
+      
+      {/* --- NUEVO: Modal para ver detalles de la tarea --- */}
+      <TaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        task={selectedTask}
+        onDataChange={refetch}
+        showGoToProjectButton={true}
+      />
+    </>
   )
 }

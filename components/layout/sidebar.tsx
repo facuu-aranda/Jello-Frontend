@@ -13,6 +13,9 @@ import { CreateProjectModal } from "@/components/modals/create-project-modal"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { NotificationPanel } from "@/components/notification-panel"
 import { Badge } from "@/components/ui/badge"
+import { useApi } from "@/hooks/useApi";
+import { ProjectSummary, Activity } from "@/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -21,31 +24,6 @@ const navigation = [
   { name: "My Tasks", href: "/tasks", icon: CheckSquare },
   { name: "Todos", href: "/todos", icon: ClipboardList },
 ]
-const projects = [
-  { id: 1, name: "Website Redesign", color: "bg-chart-1" },
-  { id: 2, name: "Mobile App", color: "bg-chart-2" },
-  { id: 3, name: "Marketing Campaign Q4", color: "bg-chart-3" },
-  { id: 4, name: "Data Analysis Dashboard", color: "bg-chart-2" },
-  { id: 5, name: "API Integration with Stripe", color: "bg-chart-5" },
-  { id: 6, name: "E-commerce Platform Launch", color: "bg-chart-1" },
-  { id: 7, name: "Content Strategy Plan", color: "bg-chart-2" },
-  { id: 8, name: "New HR Onboarding System", color: "bg-chart-3" },
-  { id: 9, name: "Customer Support Chatbot", color: "bg-chart-2" },
-  { id: 10, name: "Server Infrastructure Upgrade", color: "bg-chart-5" },
-  { id: 11, name: "UX/UI Research Phase", color: "bg-chart-1" },
-  { id: 12, name: "Internal Company Wiki", color: "bg-chart-2" },
-  { id: 13, name: "Q3 Financial Reporting", color: "bg-chart-3" },
-  { id: 14, name: "Cloud Migration to AWS", color: "bg-chart-2" },
-  { id: 15, name: "Mobile App v2.0 Features", color: "bg-chart-5" },
-  { id: 16, name: "Blog Content Calendar", color: "bg-chart-1" },
-  { id: 17, name: "A/B Testing Implementation", color: "bg-chart-2" },
-  { id: 18, name: "Security Audit & Hardening", color: "bg-chart-3" },
-  { id: 19, name: "Employee Review Tool", color: "bg-chart-2" },
-  { id: 20, name: "Social Media Strategy", color: "bg-chart-5" },
-  { id: 21, name: "Inventory Management System", color: "bg-chart-1" },
-  { id: 22, name: "Customer Feedback Portal", color: "bg-chart-2" },
-  { id: 23, name: "Annual Sales Report", color: "bg-chart-3" },
-];
 
 interface SidebarProps {
   isCollapsed: boolean
@@ -55,8 +33,11 @@ interface SidebarProps {
 
 export function Sidebar({ isCollapsed, onToggle, isMobileView = false }: SidebarProps) {
   const pathname = usePathname()
+  const { data: projects, isLoading: isLoadingProjects } = useApi<ProjectSummary[]>('/projects');
+  
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
-  const [notificationCount] = React.useState(3)
+  const { data: notifications } = useApi<Activity[]>('/activity/recent');
+const notificationCount = notifications?.length || 0;
 
   const notificationButton = (
     <Button variant="ghost" size="icon" className="relative rounded-full">
@@ -106,18 +87,33 @@ export function Sidebar({ isCollapsed, onToggle, isMobileView = false }: Sidebar
                   </Tooltip>
                 </div>
                 <div className="space-y-1">
-                  {projects.map((project) => (
-                    <Tooltip key={project.id} delayDuration={0}>
-                      <TooltipTrigger asChild>
-                        <Link href={`/project/${project.id}`} className={cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted", pathname === `/project/${project.id}` ? "text-primary" : "text-muted-foreground", isCollapsed && "justify-center")}>
-                          <span className={cn("h-2 w-2 rounded-full", project.color)} />
-                          <AnimatePresence>{!isCollapsed && (<motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex-grow truncate">{project.name}</motion.span>)}</AnimatePresence>
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">{project.name}</TooltipContent>
-                    </Tooltip>
-                  ))}
-                </div>
+  {isLoadingProjects ? (
+    Array.from({ length: 3 }).map((_, index) => (
+      <div key={index} className="flex items-center gap-3 rounded-md px-3 py-2">
+        <Skeleton className="h-2 w-2 rounded-full" />
+        {!isCollapsed && <Skeleton className="h-4 w-full" />}
+      </div>
+    ))
+  ) : (
+    projects?.map((project) => (
+      <Tooltip key={project.id} delayDuration={0}>
+        <TooltipTrigger asChild>
+          <Link href={`/project/${project.id}`} className={cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted", pathname === `/project/${project.id}` ? "text-primary" : "text-muted-foreground", isCollapsed && "justify-center")}>
+            <span className={cn("h-2 w-2 rounded-full", project.color)} />
+            <AnimatePresence>
+              {!isCollapsed && (
+                <motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex-grow truncate">
+                  {project.name}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right">{project.name}</TooltipContent>
+      </Tooltip>
+    ))
+  )}
+</div>
               </div>
             </div>
             {/* 👇 --- Este bloque ahora se oculta en la vista móvil --- 👇 */}

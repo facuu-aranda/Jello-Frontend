@@ -1,4 +1,4 @@
-// Este archivo centraliza todos los tipos de datos de la API para ser usados en el frontend.
+// Archivo: types/index.ts
 
 // -------------------- USUARIOS --------------------
 export interface UserSummary {
@@ -9,11 +9,11 @@ export interface UserSummary {
 
 export interface UserProfile extends UserSummary {
   email: string;
+  bannerUrl: string | null;
   title: string | null;
   bio: string | null;
   timezone: string | null;
   skills: string[];
-  bannerUrl: string | null;
 }
 
 export interface UserSettings {
@@ -84,6 +84,7 @@ export interface Comment {
 export interface TaskSummary {
   id: string;
   title: string;
+  status: 'todo' | 'in-progress' | 'review' | 'done';
   priority: 'low' | 'medium' | 'high' | 'critical';
   labels: Label[];
   assignees: UserSummary[];
@@ -112,29 +113,26 @@ export interface Todo {
   completed: boolean;
   priority: 'low' | 'medium' | 'high';
   category: string;
-  dueDate: string | null; // ISO 8601 Date String
-  createdAt: string; // ISO 8601 Date String
+  dueDate: string | null;
+  createdAt: string;
 }
 
 export interface Activity {
   id: string;
   type: 'comment' | 'completion' | 'join' | 'document';
   user: UserSummary;
-  action: string; 
+  action: string;
   target: string;
   time: string;
   projectId: string;
 }
 
-// CORRECCIÓN: Tipo 'SearchResult' ajustado a la respuesta real de la API
 export interface SearchResult {
   type: 'project' | 'user';
   id: string;
   name: string;
   description: string | null;
   avatar: string | null;
-  // Propiedades opcionales para manejar datos extra
   skills?: string[];
   banner?: string;
 }
-

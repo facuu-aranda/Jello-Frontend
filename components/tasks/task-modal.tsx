@@ -4,17 +4,16 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { X, Calendar, Flag, Trash2, Edit, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input" // <-- Error corregido: Importación añadida
+import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal"
 import { SubtaskList } from "./subtask-list"
 import { CommentSection } from "./comment-section"
 import { AttachmentList } from "./attachment-list"
-import { TaskDetails, Label, Comment } from "@/types" // <-- Usamos los tipos globales
+import { TaskDetails, Label, Comment } from "@/types"
 import { toast } from "sonner"
 
-// La interfaz de props ahora usa el tipo global TaskDetails
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -61,7 +60,6 @@ export function TaskModal({ isOpen, onClose, task, onSubmit, onDelete, showGoToP
     setCurrentTask(prev => prev ? { ...prev, [field]: value } : null);
   }
 
-  // CORRECCIÓN: Funciones placeholder añadidas para cumplir con las props de AttachmentList
   const handleAttachmentAdd = (files: FileList) => { toast.info("Attachment upload not implemented yet.") };
   const handleAttachmentDelete = (id: string) => { toast.info("Attachment deletion not implemented yet.") };
 
@@ -74,6 +72,7 @@ export function TaskModal({ isOpen, onClose, task, onSubmit, onDelete, showGoToP
             <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                     {isEditing ? (
+                        /* CORRECCIÓN: Se añade el tipo explícito al evento del onChange */
                         <Input value={currentTask.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUpdateField('title', e.target.value)} className="text-xl font-bold h-auto p-0 border-none focus-visible:ring-0" />
                     ) : (
                         <h2 className="text-xl font-bold text-foreground truncate">{currentTask.title}</h2>
@@ -135,4 +134,3 @@ export function TaskModal({ isOpen, onClose, task, onSubmit, onDelete, showGoToP
     </Modal>
   )
 }
-

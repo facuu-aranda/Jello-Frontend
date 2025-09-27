@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalDescription } from "@/components/ui/modal"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-
+import { UserSummary } from "@/types"
 // Mock de proyectos del usuario para el selector
 const userProjects = [
   { id: "1", name: "Website Redesign" },
@@ -16,7 +16,7 @@ const userProjects = [
 interface InviteUserModalProps {
   isOpen: boolean
   onClose: () => void
-  user: { name: string; avatar?: string }
+  user: UserSummary
 }
 
 export function InviteUserModal({ isOpen, onClose, user }: InviteUserModalProps) {
@@ -34,7 +34,7 @@ export function InviteUserModal({ isOpen, onClose, user }: InviteUserModalProps)
         <ModalHeader>
           <div className="flex items-center gap-3">
             <Avatar>
-              <AvatarImage src={user.avatar} alt={user.name} />
+              <AvatarImage src={user.avatarUrl ?? undefined} alt={user.name} />
               <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div>
