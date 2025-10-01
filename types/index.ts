@@ -1,4 +1,4 @@
-// Archivo: types/index.ts
+// Archivo: Jello-Frontend/types/index.ts
 
 // -------------------- USUARIOS --------------------
 export interface UserSummary {
@@ -74,11 +74,13 @@ export interface Attachment {
   type: 'image' | 'document' | 'other';
 }
 
+// --- INTERFAZ CORREGIDA ---
 export interface Comment {
   id: string;
   author: UserSummary;
   content: string;
   timestamp: string;
+  attachmentUrl?: string; 
 }
 
 export interface TaskSummary {

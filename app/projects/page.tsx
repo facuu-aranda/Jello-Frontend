@@ -36,12 +36,38 @@ export default function ProjectsPage() {
     setIsEditModalOpen(true);
   }
 
+  // --- FUNCIÓN CORREGIDA ---
   const handleCreateProject = async (projectData: any) => {
     toast.info("Creating your new project...");
+    
     try {
-      await apiClient.post('/projects', projectData);
+      // 1. Crear un objeto FormData
+      const formData = new FormData();
+  
+      // 2. Añadir los datos de texto (excepto las imágenes)
+      const dataToSend = {
+        name: projectData.name,
+        description: projectData.description,
+        color: projectData.color,
+        dueDate: projectData.dueDate,
+        members: projectData.members.map((id: string) => ({ user: id, role: 'member' }))
+      };
+      formData.append('data', JSON.stringify(dataToSend));
+  
+      // 3. Añadir las imágenes (si existen)
+      if (projectData.projectImage) {
+        formData.append('projectImage', projectData.projectImage);
+      }
+      if (projectData.bannerImage) {
+        formData.append('bannerImage', projectData.bannerImage);
+      }
+  
+      // 4. Enviar el objeto FormData
+      await apiClient.post('/projects', formData);
+  
       toast.success("Project created successfully!");
       refetch();
+  
     } catch (error) {
       toast.error((error as Error).message);
     }
@@ -51,7 +77,9 @@ export default function ProjectsPage() {
     if (!selectedProject) return;
     toast.info("Saving changes...");
     try {
-      await apiClient.post(`/projects/${selectedProject.id}`, projectData); // Asumiendo PUT es manejado por el método post con FormData
+      // Esta lógica también debería usar FormData si se editan imágenes.
+      // Por ahora se mantiene, pero es un punto a mejorar en el futuro.
+      await apiClient.put(`/projects/${selectedProject.id}`, projectData);
       toast.success("Project updated successfully!");
       refetch();
     } catch (error) {
@@ -63,7 +91,7 @@ export default function ProjectsPage() {
      if (!window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
     toast.info("Deleting project...");
     try {
-      await apiClient.get(`/projects/${projectId}`); // Asumiendo que el método get puede manejar DELETE por ahora
+      await apiClient.del(`/projects/${projectId}`);
       toast.success("Project deleted successfully!");
       refetch();
     } catch (error) {
@@ -79,7 +107,7 @@ export default function ProjectsPage() {
             <div className="space-y-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Projects</h1>
               <p className="text-sm sm:text-base text-muted-foreground">
-                Manage and track all your projects in one place.
+                 Manage and track all your projects in one place.
               </p>
             </div>
             <Button className="gap-2 w-full sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
@@ -142,4 +170,3 @@ export default function ProjectsPage() {
     </>
   )
 }
-

@@ -1,3 +1,5 @@
+// Archivo: Jello-Frontend/components/tasks/task-modal.tsx
+
 "use client"
 import * as React from "react"
 import Link from "next/link"
@@ -11,9 +13,11 @@ import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal"
 import { SubtaskList } from "./subtask-list"
 import { CommentSection } from "./comment-section"
 import { AttachmentList } from "./attachment-list"
-import { TaskDetails, Label, Comment } from "@/types"
+import { TaskDetails, Label, Comment, Attachment } from "@/types"
 import { toast } from "sonner"
+import { apiClient } from "@/lib/api"
 
+// ... (El resto de la interfaz y la lista de labels se mantienen igual)
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -26,13 +30,14 @@ interface TaskModalProps {
 }
 
 const availableLabels: Label[] = [
-  { id: "1", name: "Design", color: "#ec4899" },
-  { id: "2", name: "Frontend", color: "#8b5cf6" },
-  { id: "3", name: "Backend", color: "#14b8a6" },
-  { id: "4", name: "Bug", color: "#be123c" },
-  { id: "5", name: "Feature", color: "#00a3e0" },
-  { id: "6", name: "Marketing", color: "#ff6f61" },
+    { id: "1", name: "Design", color: "#ec4899" },
+    { id: "2", name: "Frontend", color: "#8b5cf6" },
+    { id: "3", name: "Backend", color: "#14b8a6" },
+    { id: "4", name: "Bug", color: "#be123c" },
+    { id: "5", name: "Feature", color: "#00a3e0" },
+    { id: "6", name: "Marketing", color: "#ff6f61" },
 ];
+
 
 export function TaskModal({ isOpen, onClose, task, onSubmit, onDelete, showGoToProjectButton = false, mode = "view", onDataChange }: TaskModalProps) {
   const [currentTask, setCurrentTask] = React.useState<TaskDetails | null>(task);
@@ -45,7 +50,7 @@ export function TaskModal({ isOpen, onClose, task, onSubmit, onDelete, showGoToP
     }
   }, [isOpen, task, mode]);
 
-  const handleSave = () => { if (currentTask) onSubmit?.(currentTask); setIsEditing(false); }
+  const handleSave = () => { if (currentTask && onSubmit) { onSubmit(currentTask); } setIsEditing(false); }
   const handleDelete = () => { if (currentTask?.id && onDelete) { onDelete(currentTask.id); onClose(); } }
   
   const handleLabelToggle = (label: Label) => {
@@ -59,9 +64,56 @@ export function TaskModal({ isOpen, onClose, task, onSubmit, onDelete, showGoToP
   const handleUpdateField = <K extends keyof TaskDetails>(field: K, value: TaskDetails[K]) => {
     setCurrentTask(prev => prev ? { ...prev, [field]: value } : null);
   }
+  
+  const handleAttachmentAdd = async (files: FileList) => {
+    // ... (lógica implementada en la respuesta anterior, se mantiene igual)
+    if (!currentTask) return;
+    toast.info(`Uploading ${files.length} file(s)...`);
+    try {
+      for (const file of Array.from(files)) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const uploadResponse = await apiClient.post<{ fileUrl: string }>('/upload', formData);
+        const newAttachmentData = { name: file.name, url: uploadResponse.fileUrl, size: `${(file.size / 1024).toFixed(1)} KB`, type: file.type.startsWith('image/') ? 'image' : 'document' };
+        const newAttachment = await apiClient.post<Attachment>(`/tasks/${currentTask.id}/attachments`, newAttachmentData);
+        setCurrentTask(prev => prev ? { ...prev, attachments: [...prev.attachments, newAttachment] } : null);
+      }
+      toast.success("File(s) uploaded successfully!");
+      onDataChange?.();
+    } catch (error) {
+      toast.error(`Upload failed: ${(error as Error).message}`);
+    }
+  };
 
-  const handleAttachmentAdd = (files: FileList) => { toast.info("Attachment upload not implemented yet.") };
-  const handleAttachmentDelete = (id: string) => { toast.info("Attachment deletion not implemented yet.") };
+  const handleAttachmentDelete = async (attachmentId: string) => {
+    // ... (lógica implementada en la respuesta anterior, se mantiene igual)
+    if (!currentTask) return;
+    if (!window.confirm("Are you sure?")) return;
+    toast.info("Deleting attachment...");
+    try {
+        await apiClient.del(`/tasks/${currentTask.id}/attachments/${attachmentId}`);
+        setCurrentTask(prev => prev ? { ...prev, attachments: prev.attachments.filter(a => a.id !== attachmentId) } : null);
+        toast.success("Attachment deleted.");
+        onDataChange?.();
+    } catch (error) {
+        toast.error(`Failed to delete: ${(error as Error).message}`);
+    }
+  };
+
+  // --- FUNCIÓN IMPLEMENTADA ---
+  const handleCommentAdd = async (formData: FormData) => {
+    if (!currentTask) return;
+    toast.info("Posting comment...");
+    try {
+        const newComment = await apiClient.post<Comment>(`/tasks/${currentTask.id}/comments`, formData);
+        setCurrentTask(prev => prev ? { ...prev, comments: [newComment, ...prev.comments] } : null);
+        toast.success("Comment posted!");
+        onDataChange?.();
+    } catch (error) {
+        toast.error(`Failed to post comment: ${(error as Error).message}`);
+    }
+  };
+
 
   if (!isOpen || !currentTask) return null;
 
@@ -69,10 +121,10 @@ export function TaskModal({ isOpen, onClose, task, onSubmit, onDelete, showGoToP
     <Modal open={isOpen} onOpenChange={onClose}>
       <ModalContent className="w-[95vw] max-w-4xl max-h-[90vh] grid grid-rows-[auto,1fr] p-0 overflow-hidden glass-card">
         <ModalHeader className="flex-shrink-0 border-b border-border/50 px-6 pt-6 pb-4">
-            <div className="flex items-center justify-between">
+          {/* ... El resto del JSX se mantiene igual ... */}
+          <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
                     {isEditing ? (
-                        /* CORRECCIÓN: Se añade el tipo explícito al evento del onChange */
                         <Input value={currentTask.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUpdateField('title', e.target.value)} className="text-xl font-bold h-auto p-0 border-none focus-visible:ring-0" />
                     ) : (
                         <h2 className="text-xl font-bold text-foreground truncate">{currentTask.title}</h2>
@@ -124,7 +176,7 @@ export function TaskModal({ isOpen, onClose, task, onSubmit, onDelete, showGoToP
               </div>
             </div>
             <SubtaskList subtasks={currentTask.subtasks} isEditing={isEditing} onSubtaskAdd={() => { }} onSubtaskDelete={() => { }} onSubtaskToggle={() => {}} />
-            <CommentSection comments={currentTask.comments} onCommentAdd={() => {}} />
+            <CommentSection comments={currentTask.comments} onCommentAdd={handleCommentAdd} />
           </div>
           <div className="lg:col-span-1 lg:border-l border-border/50 p-6 space-y-6">
             <AttachmentList attachments={currentTask.attachments} isEditing={isEditing} onAttachmentAdd={handleAttachmentAdd} onAttachmentDelete={handleAttachmentDelete}/>
