@@ -17,7 +17,7 @@ import { TaskDetails, Label, Comment, Attachment } from "@/types"
 import { toast } from "sonner"
 import { apiClient } from "@/lib/api"
 
-// ... (El resto de la interfaz y la lista de labels se mantienen igual)
+
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;

@@ -15,9 +15,22 @@ import { ProjectSummary } from "@/types"
 import { apiClient } from "@/lib/api"
 import { toast } from "sonner"
 
+// Este tipo se usa internamente en el formulario.
+interface ProjectFormData {
+  name: string;
+  description: string;
+  color: string;
+  members: string[];
+  projectImage?: File;
+  bannerImage?: File;
+  dueDate?: string;
+}
+
+type FilterType = "all" | "owned" | "working";
+
 export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = React.useState("")
-  const [filter, setFilter] = React.useState<"all" | "owned" | "working">("all")
+  const [filter, setFilter] = React.useState<FilterType>("all")
   
   const endpoint = `/projects?search=${searchQuery}&filter=${filter === 'all' ? '' : filter}`;
   const { data: projects, isLoading, refetch } = useApi<ProjectSummary[]>(endpoint);
@@ -36,25 +49,28 @@ export default function ProjectsPage() {
     setIsEditModalOpen(true);
   }
 
-  // --- FUNCIÓN CORREGIDA ---
-  const handleCreateProject = async (projectData: any) => {
+  // ✨ CORRECCIÓN: La función ahora acepta datos parciales y los valida.
+  const handleCreateProject = async (projectData: Partial<ProjectFormData>) => {
+    // 1. Validación
+    if (!projectData.name || projectData.name.trim() === "") {
+      toast.error("Project name is required.");
+      return;
+    }
+
     toast.info("Creating your new project...");
-    
     try {
-      // 1. Crear un objeto FormData
       const formData = new FormData();
-  
-      // 2. Añadir los datos de texto (excepto las imágenes)
+      
+      // 2. Construcción segura de datos
       const dataToSend = {
         name: projectData.name,
-        description: projectData.description,
-        color: projectData.color,
+        description: projectData.description || '',
+        color: projectData.color || 'bg-blue-500',
         dueDate: projectData.dueDate,
-        members: projectData.members.map((id: string) => ({ user: id, role: 'member' }))
+        members: (projectData.members || []).map((id: string) => ({ user: id, role: 'member' }))
       };
       formData.append('data', JSON.stringify(dataToSend));
   
-      // 3. Añadir las imágenes (si existen)
       if (projectData.projectImage) {
         formData.append('projectImage', projectData.projectImage);
       }
@@ -62,38 +78,39 @@ export default function ProjectsPage() {
         formData.append('bannerImage', projectData.bannerImage);
       }
   
-      // 4. Enviar el objeto FormData
       await apiClient.post('/projects', formData);
-  
       toast.success("Project created successfully!");
       refetch();
-  
+      setIsCreateModalOpen(false); // Cierra el modal al tener éxito
     } catch (error) {
       toast.error((error as Error).message);
     }
   }
 
-  const handleEditProject = async (projectData: any) => {
+  const handleEditProject = async (projectData: Partial<ProjectFormData>) => {
     if (!selectedProject) return;
     toast.info("Saving changes...");
     try {
-      // Esta lógica también debería usar FormData si se editan imágenes.
-      // Por ahora se mantiene, pero es un punto a mejorar en el futuro.
+      // NOTA: Asumimos que la API para editar puede recibir datos parciales.
+      // Si la API requiere el objeto completo, necesitarías buscar los datos del `selectedProject`
+      // y fusionarlos con `projectData` antes de enviar.
       await apiClient.put(`/projects/${selectedProject.id}`, projectData);
       toast.success("Project updated successfully!");
       refetch();
+      setIsEditModalOpen(false);
     } catch (error) {
       toast.error((error as Error).message);
     }
   }
 
   const handleDeleteProject = async (projectId: string) => {
-     if (!window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
+    if (!window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
     toast.info("Deleting project...");
     try {
       await apiClient.del(`/projects/${projectId}`);
       toast.success("Project deleted successfully!");
       refetch();
+      setIsEditModalOpen(false); // También cierra el modal de edición
     } catch (error) {
       toast.error((error as Error).message);
     }
@@ -107,7 +124,7 @@ export default function ProjectsPage() {
             <div className="space-y-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Projects</h1>
               <p className="text-sm sm:text-base text-muted-foreground">
-                 Manage and track all your projects in one place.
+                Manage and track all your projects in one place.
               </p>
             </div>
             <Button className="gap-2 w-full sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
@@ -128,7 +145,7 @@ export default function ProjectsPage() {
             </div>
           </div>
 
-          <Tabs value={filter} onValueChange={(value) => setFilter(value as any)} className="space-y-4 sm:space-y-6">
+          <Tabs value={filter} onValueChange={(value) => setFilter(value as FilterType)} className="space-y-4 sm:space-y-6">
             <TabsList className="grid w-full grid-cols-3 sm:max-w-md">
               <TabsTrigger value="all">All Projects</TabsTrigger>
               <TabsTrigger value="owned">Owned by Me</TabsTrigger>

@@ -13,60 +13,87 @@ import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal"
 import { DatePicker } from "@/components/ui/date-picker"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { TaskSummary, Label, UserSummary } from "@/types"
+
+// ✨ MEJORA: Definir tipos reutilizables
+type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
+type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
+
+// ✨ CORRECCIÓN: Definir una interfaz para el estado del formulario
+interface TaskFormData {
+  title: string;
+  description: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  dueDate: Date | undefined;
+  labels: string[];      // Almacenamos solo los IDs
+  assignees: string[];   // Almacenamos solo los IDs
+  subtasks: string[];    // Almacenamos el texto de las subtareas
+}
 
 interface CreateTaskModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (taskData: any) => void
-  columnId?: string
+  onSubmit: (taskData: Partial<TaskSummary>) => void
+  defaultStatus?: TaskStatus
   projectId?: string
 }
 
-const priorityOptions = [
+const priorityOptions: { value: TaskPriority, label: string, color: string }[] = [
   { value: "low", label: "Low", color: "text-green-500" },
   { value: "medium", label: "Medium", color: "text-yellow-500" },
   { value: "high", label: "High", color: "text-orange-500" },
   { value: "critical", label: "Critical", color: "text-red-500" },
 ]
 
-const statusOptions = [
+const statusOptions: { value: TaskStatus, label: string }[] = [
   { value: "todo", label: "To Do" },
   { value: "in-progress", label: "In Progress" },
   { value: "review", label: "Review" },
   { value: "done", label: "Done" },
 ]
 
-const availableLabels = [
-  { id: "1", name: "Design", color: "#ec4899" },
-  { id: "2", name: "Frontend", color: "#8b5cf6" },
-  { id: "3", name: "Backend", color: "#14b8a6" },
-  { id: "4", name: "React", color: "#00a3e0" },
-  { id: "5", name: "Documentation", color: "#10b981" },
-  { id: "6", name: "Bug", color: "#ef4444" },
-  { id: "7", name: "Feature", color: "#f59e0b" },
+const availableLabels: Label[] = [
+    { id: "1", name: "Design", color: "#ec4899" },
+    { id: "2", name: "Frontend", color: "#8b5cf6" },
+    { id: "3", name: "Backend", color: "#14b8a6" },
+    { id: "4", name: "React", color: "#00a3e0" },
+    { id: "5", name: "Documentation", color: "#10b981" },
+    { id: "6", name: "Bug", color: "#ef4444" },
+    { id: "7", name: "Feature", color: "#f59e0b" },
 ]
 
-const mockTeamMembers = [
+type MockTeamMember = { id: string; name: string; email: string; avatar: string; };
+const mockTeamMembers: MockTeamMember[] = [
   { id: "1", name: "Sarah Johnson", email: "sarah@example.com", avatar: "/sarah-avatar.png" },
   { id: "2", name: "Mike Chen", email: "mike@example.com", avatar: "/mike-avatar.jpg" },
   { id: "3", name: "Alex Rivera", email: "alex@example.com", avatar: "/diverse-user-avatars.png" },
   { id: "4", name: "Emma Davis", email: "emma@example.com", avatar: "/diverse-user-avatars.png" },
 ]
 
-export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId }: CreateTaskModalProps) {
-  const [formData, setFormData] = React.useState({
+export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'todo', projectId }: CreateTaskModalProps) {
+  // ✨ CORRECCIÓN: Usamos la interfaz para tipar el estado
+  const [formData, setFormData] = React.useState<TaskFormData>({
     title: "",
     description: "",
     priority: "medium",
-    status: columnId || "todo",
-    dueDate: undefined as Date | undefined,
-    labels: [] as string[],
-    assignees: [] as string[],
-    subtasks: [] as string[],
-  })
+    status: defaultStatus,
+    dueDate: undefined,
+    labels: [],
+    assignees: [],
+    subtasks: [],
+  });
+
   const [errors, setErrors] = React.useState<Record<string, string>>({})
   const [newSubtask, setNewSubtask] = React.useState("")
   const isMobile = useIsMobile()
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setFormData(prev => ({ ...prev, status: defaultStatus }));
+    }
+  }, [defaultStatus, isOpen]);
+
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -80,15 +107,42 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
-      onSubmit({
-        ...formData,
+      
+      const selectedLabels: Label[] = formData.labels
+        .map((id) => availableLabels.find((l) => l.id === id))
+        .filter((l): l is Label => l !== undefined);
+
+      const selectedAssignees: UserSummary[] = formData.assignees
+        .map((id) => {
+          const member = mockTeamMembers.find((m) => m.id === id);
+          if (!member) return undefined;
+          
+          // ✨ CORRECCIÓN: Creamos un objeto que coincide con el tipo `UserSummary`
+          const userSummary: UserSummary = {
+            id: member.id,
+            name: member.name,
+            avatarUrl: member.avatar,
+          };
+          return userSummary;
+        })
+        .filter((a): a is UserSummary => a !== undefined);
+      
+      // ✨ CORRECCIÓN: Construimos el payload manualmente para asegurar la compatibilidad de tipos
+      const taskPayload: Partial<TaskSummary> = {
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        status: formData.status,
         dueDate: formData.dueDate?.toISOString(),
         projectId,
-        labels: formData.labels.map((id) => availableLabels.find((l) => l.id === id)).filter(Boolean),
-        assignees: formData.assignees.map((id) => mockTeamMembers.find((m) => m.id === id)).filter(Boolean),
-      })
+        labels: selectedLabels,
+        assignees: selectedAssignees,
+      };
+
+      onSubmit(taskPayload);
+      
       setFormData({
-        title: "", description: "", priority: "medium", status: columnId || "todo",
+        title: "", description: "", priority: "medium", status: defaultStatus,
         dueDate: undefined, labels: [], assignees: [], subtasks: [],
       })
       setErrors({})
@@ -167,7 +221,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2"><Flag className="w-4 h-4" />Priority</label>
-                  <Select value={formData.priority} onValueChange={(value) => setFormData((prev) => ({ ...prev, priority: value }))}>
+                  <Select value={formData.priority} onValueChange={(value: TaskPriority) => setFormData((prev) => ({ ...prev, priority: value }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -186,7 +240,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Status</label>
-                  <Select value={formData.status} onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}>
+                  <Select value={formData.status} onValueChange={(value: TaskStatus) => setFormData((prev) => ({ ...prev, status: value }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {statusOptions.map((option) => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}
@@ -255,4 +309,3 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, columnId, projectId
     </Modal>
   )
 }
-

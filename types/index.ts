@@ -86,6 +86,7 @@ export interface Comment {
 export interface TaskSummary {
   id: string;
   title: string;
+  description?: string | null;
   status: 'todo' | 'in-progress' | 'review' | 'done';
   priority: 'low' | 'medium' | 'high' | 'critical';
   labels: Label[];

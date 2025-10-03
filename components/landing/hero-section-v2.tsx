@@ -1,93 +1,98 @@
+// Archivo: Jello-Frontend/components/landing/hero-section-v2.tsx
+
 "use client"
 
-import Link from "next/link"
-import { motion } from "framer-motion"
-import { ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { TaskCard } from "@/components/tasks/task-card"
+import * as React from 'react'
+import Link from 'next/link'
+import { motion } from 'framer-motion'
+import { TaskSummary } from '@/types'
+import { Button } from '@/components/ui/button'
+import { TaskCard } from '@/components/tasks/task-card'
+import { ArrowRight } from 'lucide-react'
+import { Badge } from '@/components/ui'
 
-// 👇 --- DATOS DE EJEMPLO CORRECTOS AÑADIDOS --- 👇
-const mockTask1 = {
-  id: "1",
-  title: "Diseñar Mockups de Alta Fidelidad",
-  priority: "high" as const,
-  labels: [{ id: "1", name: "Diseño", color: "#ec4899" }],
-  assignees: [{ id: "1", name: "S", avatar: "/sarah-avatar.png" }],
-  commentsCount: 5,
-  attachmentsCount: 2,
-  subtasks: { completed: 1, total: 3 },
-};
-
-const mockTask2 = {
-  id: "2",
-  title: "Investigación de API de Pagos",
-  priority: "medium" as const,
-  labels: [{ id: "3", name: "Backend", color: "#14b8a6" }],
-  assignees: [{ id: "2", name: "M", avatar: "/mike-avatar.jpg" }],
-  commentsCount: 2,
-  attachmentsCount: 1,
-  subtasks: { completed: 0, total: 2 },
-};
-
-const mockTask3 = {
-  id: "3",
-  title: "Crear Componente de Botón",
-  priority: "low" as const,
-  labels: [{ id: "2", name: "Frontend", color: "#8b5cf6" }],
-  assignees: [{ id: "3", name: "A", avatar: "/diverse-user-avatars.png" }],
-  commentsCount: 0,
-  attachmentsCount: 0,
-  subtasks: { completed: 4, total: 4 },
-};
-// 👆 --- FIN DE LOS DATOS DE EJEMPLO --- 👆
-
+const mockTasks: TaskSummary[] = [
+    {
+        id: '1',
+        title: 'Draft Q3 marketing report',
+        priority: 'high',
+        labels: [{ id: 'l1', name: 'Marketing', color: '#ff6f61' }],
+        assignees: [{ id: 'u1', name: 'A', avatarUrl: '/avatars/sophie.png' }],
+        subtasks: { total: 2, completed: 1 },
+        status: 'in-progress',
+        dueDate: '2025-08-15',
+        commentCount: 3,
+        attachmentCount: 1,
+        projectId: 'proj-1'
+    },
+    {
+        id: '2',
+        title: 'Develop new landing page design',
+        priority: 'medium',
+        labels: [{ id: 'l2', name: 'Design', color: '#ec4899' }],
+        assignees: [{ id: 'u2', name: 'M', avatarUrl: '/avatars/michael.png' }],
+        subtasks: { total: 5, completed: 4 },
+        status: 'review',
+        dueDate: '2025-08-20',
+        commentCount: 8,
+        attachmentCount: 2,
+        projectId: 'proj-1'
+    },
+    {
+        id: '3',
+        title: 'Fix authentication bug on mobile',
+        priority: 'low',
+        labels: [{ id: 'l3', name: 'Bug', color: '#be123c' }],
+        assignees: [{ id: 'u3', name: 'E', avatarUrl: '/avatars/eva.png' }],
+        subtasks: { total: 1, completed: 1 },
+        status: 'done',
+        dueDate: '2025-07-30',
+        commentCount: 2,
+        attachmentCount: 0,
+        projectId: 'proj-2'
+    },
+];
 
 export function HeroSectionV2() {
-  return (
-    <section className="relative py-20 px-4 overflow-hidden">
-      <div className="container mx-auto max-w-6xl">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <motion.div
-            className="space-y-8 z-10"
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-          >
-            <h1 className="text-4xl lg:text-6xl font-bold text-balance leading-tight">
-              Organiza tu caos, <span className="text-primary">encuentra tu foco.</span>
-            </h1>
-            <p className="text-xl text-muted-foreground text-pretty max-w-2xl">
-              Jello es el ecosistema de productividad que se adapta a ti. Gestiona proyectos complejos y tareas personales con la ayuda de una IA inteligente.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/register">
-                <Button size="lg" className="group w-full sm:w-auto">
-                  Empieza Gratis
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                </Button>
-              </Link>
+    return (
+        <section className="w-full py-20 md:py-32 bg-grid-pattern relative overflow-hidden">
+            <div className="container mx-auto px-4 md:px-6 text-center">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                >
+                    <Badge variant="secondary" className="mb-4">Introducing Jello 2.0</Badge>
+                    <h1 className="text-4xl md:text-6xl font-bold tracking-tighter text-foreground mb-6">
+                        The Future of Project Management is Here
+                    </h1>
+                    <p className="max-w-3xl mx-auto text-lg md:text-xl text-muted-foreground mb-10">
+                        Jello helps teams move work forward. A single platform for project management, collaboration, and automation.
+                    </p>
+                    <div className="flex justify-center gap-4">
+                        <Button asChild size="lg" className="gap-2">
+                            <Link href="/register">Get Started Free <ArrowRight className="w-4 h-4" /></Link>
+                        </Button>
+                        <Button asChild size="lg" variant="outline">
+                            <Link href="/showcase">Explore Features</Link>
+                        </Button>
+                    </div>
+                </motion.div>
             </div>
-          </motion.div>
-
-          <motion.div
-            className="relative h-96 hidden lg:block"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-          >
-            {/* 👇 --- TARJETAS CON DATOS CORRECTOS --- 👇 */}
-            <motion.div className="absolute top-0 left-1/4" animate={{ y: [0, -15, 0] }} transition={{ duration: 5, repeat: Infinity, repeatType: "mirror" }}>
-              <TaskCard task={mockTask1} />
-            </motion.div>
-            <motion.div className="absolute bottom-0 left-0" animate={{ y: [0, 10, 0] }} transition={{ duration: 6, repeat: Infinity, delay: 1, repeatType: "mirror" }}>
-              <TaskCard task={mockTask2} />
-            </motion.div>
-            <motion.div className="absolute top-1/4 right-0" animate={{ y: [0, -10, 0] }} transition={{ duration: 7, repeat: Infinity, delay: 0.5, repeatType: "mirror" }}>
-              <TaskCard task={mockTask3} />
-            </motion.div>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  )
+            
+            <div className="absolute -bottom-20 -left-10 -right-10 h-60">
+                <div className="flex justify-center items-end h-full gap-4 perspective-1000">
+                    <motion.div initial={{ y: 50, opacity: 0, rotateX: 20 }} animate={{ y: 0, opacity: 1, rotateX: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="w-72">
+                        <TaskCard task={mockTasks[0]} />
+                    </motion.div>
+                    <motion.div initial={{ y: 50, opacity: 0, rotateX: 20 }} animate={{ y: 0, opacity: 1, rotateX: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="w-72 mb-10">
+                        <TaskCard task={mockTasks[1]} />
+                    </motion.div>
+                    <motion.div initial={{ y: 50, opacity: 0, rotateX: 20 }} animate={{ y: 0, opacity: 1, rotateX: 0 }} transition={{ duration: 0.8, delay: 0.6 }} className="w-72">
+                        <TaskCard task={mockTasks[2]} />
+                    </motion.div>
+                </div>
+            </div>
+        </section>
+    )
 }

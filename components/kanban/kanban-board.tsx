@@ -1,45 +1,50 @@
 "use client"
-import { motion } from "framer-motion"
-import { KanbanColumn } from "./kanban-column"
-import { ProjectDetails, TaskSummary } from "@/types" // Importamos los tipos
 
-// CORREGIDO: Las props ahora reciben los datos del proyecto
+import * as React from 'react';
+import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
+import { KanbanColumn } from './kanban-column';
+import { ProjectDetails, TaskSummary } from '@/types';
+
 interface KanbanBoardProps {
   project: ProjectDetails;
-  onTaskView?: (task: TaskSummary) => void;
-  onTaskEdit?: (task: TaskSummary) => void;
+  onTaskStatusChange: (taskId: string, newStatus: string) => void;
+  onTaskClick?: (task: TaskSummary) => void;
   onAddTask?: (columnId: string) => void;
 }
 
-// Mapeo de columnas para asegurar el orden y los metadatos
-const columnsConfig = [
-  { id: "todo", title: "To Do", color: "bg-gray-500" },
-  { id: "in-progress", title: "In Progress", color: "bg-primary" },
-  { id: "review", title: "Review", color: "bg-accent" },
-  { id: "done", title: "Done", color: "bg-green-500" },
-]
+export function KanbanBoard({ project, onTaskStatusChange, onTaskClick, onAddTask }: KanbanBoardProps) {
 
-export function KanbanBoard({ project, onTaskView, onTaskEdit, onAddTask }: KanbanBoardProps) {
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+    
+    onTaskStatusChange(draggableId, destination.droppableId);
+  };
+
+  const handleTaskClick = (task: TaskSummary) => {
+    onTaskClick?.(task);
+  }
+
+  const handleAddTask = (columnId: string) => {
+    onAddTask?.(columnId);
+  }
+
   return (
-    <div className="h-full overflow-x-auto">
-      <motion.div className="flex gap-6 h-full min-w-max p-6">
-        {columnsConfig.map((columnConfig, index) => {
-          // Obtenemos las tareas para esta columna desde los datos del proyecto
-          const tasks = project.tasksByStatus[columnConfig.id as keyof typeof project.tasksByStatus] || [];
-          const column = { ...columnConfig, tasks };
-
-          return (
-            <motion.div
-              key={column.id}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <KanbanColumn column={column} onTaskView={onTaskView} onTaskEdit={onTaskEdit} onAddTask={onAddTask} />
-            </motion.div>
-          );
-        })}
-      </motion.div>
-    </div>
-  )
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <div className="flex gap-6 p-4 overflow-x-auto h-full">
+        <KanbanColumn id="todo" title="To Do" tasks={project.tasksByStatus.todo} onAddTask={() => handleAddTask('todo')} onTaskClick={handleTaskClick} />
+        <KanbanColumn id="in-progress" title="In Progress" tasks={project.tasksByStatus['in-progress']} onAddTask={() => handleAddTask('in-progress')} onTaskClick={handleTaskClick} />
+        <KanbanColumn id="review" title="In Review" tasks={project.tasksByStatus.review} onAddTask={() => handleAddTask('review')} onTaskClick={handleTaskClick} />
+        <KanbanColumn id="done" title="Done" tasks={project.tasksByStatus.done} onAddTask={() => handleAddTask('done')} onTaskClick={handleTaskClick} />
+      </div>
+    </DragDropContext>
+  );
 }

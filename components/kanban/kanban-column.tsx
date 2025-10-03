@@ -1,77 +1,83 @@
 "use client"
-import { motion } from "framer-motion"
-import { Plus, MoreHorizontal } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { TaskCard } from "@/components/tasks/task-card"
-import { cn } from "@/lib/utils"
-import { TaskSummary } from "@/types" // Importamos el tipo
+
+import * as React from 'react';
+// CORRECTION: Import the necessary components and types from the library
+import {
+  Draggable,
+  Droppable,
+  type DroppableProvided,
+  type DroppableStateSnapshot,
+  type DraggableProvided
+} from '@hello-pangea/dnd';
+import { TaskSummary } from '@/types';
+import { TaskCard } from '@/components/tasks/task-card';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface KanbanColumnProps {
-  column: {
-    id: string;
-    title: string;
-    color: string;
-    tasks: TaskSummary[];
-  };
-  onTaskView?: (task: TaskSummary) => void;
-  onTaskEdit?: (task: TaskSummary) => void;
-  onAddTask?: (columnId: string) => void;
+  id: string;
+  title: string;
+  tasks: TaskSummary[];
+  onAddTask: () => void;
+  onTaskClick: (task: TaskSummary) => void;
 }
 
-export function KanbanColumn({ column, onTaskView, onTaskEdit, onAddTask }: KanbanColumnProps) {
+const statusColorMap: { [key: string]: string } = {
+  todo: 'bg-blue-500',
+  'in-progress': 'bg-yellow-500',
+  review: 'bg-purple-500',
+  done: 'bg-green-500',
+};
+
+export function KanbanColumn({ id, title, tasks, onAddTask, onTaskClick }: KanbanColumnProps) {
   return (
-    <motion.div
-      className="flex flex-col w-80 h-full"
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="glass-card p-4 mb-4 rounded-2xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={cn("w-3 h-3 rounded-full", column.color)} />
-            <h3 className="font-semibold text-foreground">{column.title}</h3>
-            <Badge variant="secondary" className="text-xs">
-              {column.tasks.length}
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="w-6 h-6" onClick={() => onAddTask?.(column.id)}>
-              <Plus className="w-4 h-4" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-6 h-6">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>Edit column</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onAddTask?.(column.id)}>Add task</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+    <div className="flex flex-col w-full sm:w-80 md:w-96 bg-card/50 rounded-2xl flex-shrink-0">
+      <div className="flex items-center justify-between p-4 border-b border-border/50">
+        <div className="flex items-center gap-2">
+          <div className={cn("w-2.5 h-2.5 rounded-full", statusColorMap[id] || 'bg-gray-400')} />
+          <h3 className="font-semibold text-foreground">{title}</h3>
         </div>
+        <span className="text-sm font-medium text-muted-foreground">{tasks.length}</span>
       </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto pr-2">
-        {column.tasks.map((task: TaskSummary, index: number) => (
-          <motion.div key={task.id} initial={{ opacity: 0 }} animate={{ opacity: 1}} transition={{ delay: index * 0.05 }}>
-            <TaskCard task={task} onView={() => onTaskView?.(task)} onEdit={() => onTaskEdit?.(task)} />
-          </motion.div>
-        ))}
-        <motion.button
-          className="w-full p-4 border-2 border-dashed border-border rounded-2xl text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
-          onClick={() => onAddTask?.(column.id)}
-          whileTap={{ scale: 0.98 }}
-        >
-          <Plus className="w-5 h-5 mx-auto mb-2" />
-          <span className="text-sm">Add a task</span>
-        </motion.button>
+      <Droppable droppableId={id}>
+        {/* CORRECTION: Add explicit types for the render prop arguments */}
+        {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => (
+          <div
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+            className={cn(
+              "flex-grow p-4 space-y-3 transition-colors duration-200",
+              snapshot.isDraggingOver ? 'bg-primary/10' : ''
+            )}
+          >
+            {tasks.map((task, index) => (
+              <Draggable key={task.id} draggableId={task.id} index={index}>
+                {/* CORRECTION: Add explicit type for the render prop argument */}
+                {(provided: DraggableProvided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    onClick={() => onTaskClick(task)}
+                  >
+                    <TaskCard task={task} />
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+
+      <div className="p-4 pt-0">
+        <Button variant="ghost" className="w-full justify-start gap-2" onClick={onAddTask}>
+          <Plus className="w-4 h-4" />
+          Add new task
+        </Button>
       </div>
-    </motion.div>
-  )
+    </div>
+  );
 }
