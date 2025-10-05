@@ -14,7 +14,6 @@ export function useApi<T>(endpoint: string) {
     setIsLoading(true);
     setError(null);
     try {
-      // Usamos el método get de nuestro apiClient centralizado
       const result = await apiClient.get<T>(endpoint);
       setData(result);
     } catch (err) {
@@ -30,6 +29,6 @@ export function useApi<T>(endpoint: string) {
     fetchData();
   }, [fetchData]);
 
-  // Devolvemos los datos y una función para recargar
-  return { data, isLoading, error, refetch: fetchData };
+  // ✨ CORRECCIÓN: Devolvemos 'setData' para permitir actualizaciones optimistas.
+  return { data, isLoading, error, refetch: fetchData, setData };
 }

@@ -1,13 +1,15 @@
 "use client"
 
 import * as React from 'react';
+// ✨ CORRECCIÓN: Importamos el tipo DropResult
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
 import { KanbanColumn } from './kanban-column';
 import { ProjectDetails, TaskSummary } from '@/types';
 
 interface KanbanBoardProps {
   project: ProjectDetails;
-  onTaskStatusChange: (taskId: string, newStatus: string) => void;
+  // ✨ CORRECCIÓN: La prop ahora espera el objeto 'result' completo
+  onTaskStatusChange: (result: DropResult) => void;
   onTaskClick?: (task: TaskSummary) => void;
   onAddTask?: (columnId: string) => void;
 }
@@ -15,18 +17,15 @@ interface KanbanBoardProps {
 export function KanbanBoard({ project, onTaskStatusChange, onTaskClick, onAddTask }: KanbanBoardProps) {
 
   const handleDragEnd = (result: DropResult) => {
-    const { destination, source, draggableId } = result;
+    const { destination, source } = result;
 
-    if (!destination) return;
-
-    if (
-      destination.droppableId === source.droppableId &&
-      destination.index === source.index
-    ) {
+    // Si no hay destino, o si se soltó en el mismo lugar, no hacemos nada.
+    if (!destination || (destination.droppableId === source.droppableId && destination.index === source.index)) {
       return;
     }
     
-    onTaskStatusChange(draggableId, destination.droppableId);
+    // ✨ CORRECCIÓN: Pasamos el objeto 'result' completo al handler de la página.
+    onTaskStatusChange(result);
   };
 
   const handleTaskClick = (task: TaskSummary) => {

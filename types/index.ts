@@ -42,6 +42,8 @@ export interface ProjectSummary {
   dueDate: string | null;
   totalTasks: number;
   completedTasks: number;
+  projectImageUrl: string | null;
+  bannerImageUrl: string | null;  
 }
 
 export interface ProjectDetails extends ProjectSummary {

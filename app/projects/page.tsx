@@ -182,6 +182,7 @@ export default function ProjectsPage() {
           onSubmit={handleEditProject}
           onDelete={handleDeleteProject}
           project={selectedProject}
+          onDataChange={refetch} 
         />
       )}
     </>

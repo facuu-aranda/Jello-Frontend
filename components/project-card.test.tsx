@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { ProjectCard } from './project-card';
 import { ProjectSummary } from '../types';
 
+// ✨ CORRECCIÓN: Añadimos las nuevas propiedades al mock
 const mockProject: ProjectSummary = {
   id: 'proj-123',
   name: 'Website Redesign',
@@ -18,6 +19,8 @@ const mockProject: ProjectSummary = {
   dueDate: '2025-12-31',
   totalTasks: 20,
   completedTasks: 15,
+  projectImageUrl: null, // <-- Añadido
+  bannerImageUrl: null,  // <-- Añadido
 };
 
 jest.mock('next/link', () => {
@@ -41,7 +44,6 @@ describe('Componente ProjectCard', () => {
     expect(screen.getByText('75%')).toBeInTheDocument();
     expect(screen.getByText('15/20')).toBeInTheDocument();
     
-    // Verificamos las iniciales de los miembros en el fallback del Avatar
     expect(screen.getByText('A')).toBeInTheDocument();
     expect(screen.getByText('B')).toBeInTheDocument();
   });
@@ -61,7 +63,6 @@ describe('Componente ProjectCard', () => {
     const user = userEvent.setup();
     render(<ProjectCard project={mockProject} onEdit={mockOnEdit} />);
 
-    // CORRECCIÓN: Buscamos el botón por su aria-label, que ahora está directamente en el botón.
     const editButton = screen.getByRole('button', { name: /edit project/i });
     
     await user.click(editButton);
