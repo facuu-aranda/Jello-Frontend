@@ -100,18 +100,29 @@ export default function ProjectPage() {
     }
   };
 
-  const handleEditProject = async (projectData: any) => {
+  const handleEditProject = async (formData: FormData) => {
     if (!project) return;
     toast.info("Saving changes...");
     try {
-      await apiClient.put(`/projects/${project.id}`, projectData);
+      // 1. Esperamos a que la petición de actualización se complete.
+      await apiClient.put(
+        `/projects/${project.id}`,
+        formData
+      );
+      
+      // 2. ✨ EL CAMBIO CLAVE: Esperamos a que la recarga de datos termine.
+      // Esto pausa la ejecución hasta que `refetch` haya obtenido los datos frescos
+      // y actualizado el estado 'project' en el hook.
+      await refetch();
+      
+      // 3. Solo después de que todo se haya actualizado, mostramos el éxito y cerramos el modal.
       toast.success("Project updated successfully!");
-      refetch();
       setIsEditModalOpen(false);
+
     } catch (error) {
       toast.error((error as Error).message);
     }
-  };
+  }
   
   const handleDeleteProject = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;

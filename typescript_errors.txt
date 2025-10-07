@@ -1,0 +1,10 @@
+Reporte de Errores de TypeScript para el proyecto: C:\Users\LAPTOP\Desktop\Work\Jello\Jello-Frontend\
+Generado el: 6/10/2025, 17:52:22
+================================================================================
+
+Listado de errores encontrados:
+
+app/projects/page.tsx(180,11): error TS2322: Type '(formData: FormData) => Promise<void>' is not assignable to type '(data: Partial<ProjectFormData>) => void'.
+  Types of parameters 'formData' and 'data' are incompatible.
+    Type 'Partial<ProjectFormData>' is missing the following properties from type 'FormData': append, delete, get, getAll, and 7 more.
+components/modals/edit-project-modal.tsx(80,14): error TS2559: Type 'FormData' has no properties in common with type 'Partial<ProjectFormData>'.

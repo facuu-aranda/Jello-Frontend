@@ -31,11 +31,12 @@ interface ProjectFormData {
 interface EditProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Partial<ProjectFormData>) => void;
+  onSubmit: (data: FormData) => void; // <--- Este es el tipo correcto
   onDelete: (id: string) => void;
   project: ProjectSummary;
   onDataChange: () => void; 
 }
+
 
 export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project, onDataChange }: EditProjectModalProps) {
   const [formData, setFormData] = React.useState<Partial<ProjectFormData>>({});
@@ -57,9 +58,28 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project,
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // 1. Crear un objeto FormData. Esto es crucial para enviar archivos.
+    const dataToSubmit = new FormData();
+
+    // 2. Añadir los campos de texto al FormData.
+    // Usamos los valores originales del proyecto como fallback por si no se editan.
+    dataToSubmit.append('name', formData.name || project.name);
+    dataToSubmit.append('description', formData.description || project.description);
+    dataToSubmit.append('color', formData.color || project.color);
+
+    // 3. Añadir los archivos de imagen SÓLO si se ha seleccionado uno nuevo.
+    if (formData.projectImage) {
+      dataToSubmit.append('projectImage', formData.projectImage);
+    }
+    if (formData.bannerImage) {
+      dataToSubmit.append('bannerImage', formData.bannerImage);
+    }
+    
+    // 4. Llamar a la función onSubmit del padre con el FormData ya construido.
+    onSubmit(dataToSubmit);
   };
   
   // Cerramos ambos modales si el principal se cierra

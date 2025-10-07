@@ -1,3 +1,5 @@
+// Archivo: Jello-Frontend/components/modals/create-task-modal.tsx
+
 "use client"
 
 import * as React from "react"
@@ -15,20 +17,18 @@ import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { TaskSummary, Label, UserSummary } from "@/types"
 
-// ✨ MEJORA: Definir tipos reutilizables
 type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
 type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 
-// ✨ CORRECCIÓN: Definir una interfaz para el estado del formulario
 interface TaskFormData {
   title: string;
   description: string;
   priority: TaskPriority;
   status: TaskStatus;
   dueDate: Date | undefined;
-  labels: string[];      // Almacenamos solo los IDs
-  assignees: string[];   // Almacenamos solo los IDs
-  subtasks: string[];    // Almacenamos el texto de las subtareas
+  labels: string[];
+  assignees: string[];
+  subtasks: string[];
 }
 
 interface CreateTaskModalProps {
@@ -72,7 +72,6 @@ const mockTeamMembers: MockTeamMember[] = [
 ]
 
 export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'todo', projectId }: CreateTaskModalProps) {
-  // ✨ CORRECCIÓN: Usamos la interfaz para tipar el estado
   const [formData, setFormData] = React.useState<TaskFormData>({
     title: "",
     description: "",
@@ -104,6 +103,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
     return Object.keys(newErrors).length === 0
   }
 
+  // --- FUNCIÓN 'handleSubmit' MODIFICADA ---
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
@@ -117,7 +117,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
           const member = mockTeamMembers.find((m) => m.id === id);
           if (!member) return undefined;
           
-          // ✨ CORRECCIÓN: Creamos un objeto que coincide con el tipo `UserSummary`
           const userSummary: UserSummary = {
             id: member.id,
             name: member.name,
@@ -127,16 +126,18 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
         })
         .filter((a): a is UserSummary => a !== undefined);
       
-      // ✨ CORRECCIÓN: Construimos el payload manualmente para asegurar la compatibilidad de tipos
-      const taskPayload: Partial<TaskSummary> = {
+      // --- CAMBIO CLAVE ---
+      // El backend espera la propiedad 'project', no 'projectId'.
+      // El payload se construye con el nombre de campo correcto.
+      const taskPayload: any = {
         title: formData.title,
         description: formData.description,
         priority: formData.priority,
         status: formData.status,
         dueDate: formData.dueDate?.toISOString(),
-        projectId,
-        labels: selectedLabels,
-        assignees: selectedAssignees,
+        project: projectId, // <-- AQUÍ ESTÁ EL CAMBIO
+        labels: selectedLabels.map(l => l.id), 
+        assignees: selectedAssignees.map(a => a.id),
       };
 
       onSubmit(taskPayload);
@@ -176,8 +177,10 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
   const removeSubtask = (index: number) => {
     setFormData((prev) => ({ ...prev, subtasks: prev.subtasks.filter((_, i) => i !== index) }))
   }
-
-  return (
+  
+  // El JSX del componente no necesita cambios, solo la lógica de handleSubmit.
+  // ... (pega aquí el JSX completo de tu componente)
+    return (
     <Modal open={isOpen} onOpenChange={onClose}>
       <ModalContent className={cn("max-h-[95vh] overflow-hidden", isMobile ? "max-w-[95vw] mx-2" : "max-w-3xl")}>
         <motion.div

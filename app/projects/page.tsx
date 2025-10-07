@@ -86,18 +86,20 @@ export default function ProjectsPage() {
       toast.error((error as Error).message);
     }
   }
-
-  const handleEditProject = async (projectData: Partial<ProjectFormData>) => {
+const handleEditProject = async (projectData: FormData) => { // <-- Cambiado a FormData
     if (!selectedProject) return;
     toast.info("Saving changes...");
     try {
-      // NOTA: Asumimos que la API para editar puede recibir datos parciales.
-      // Si la API requiere el objeto completo, necesitarías buscar los datos del `selectedProject`
-      // y fusionarlos con `projectData` antes de enviar.
+      // 1. El apiClient ahora recibe el FormData directamente.
       await apiClient.put(`/projects/${selectedProject.id}`, projectData);
+      
       toast.success("Project updated successfully!");
-      refetch();
+      
+      // 2. refetch() le pide a tu hook useApi que vuelva a cargar los datos frescos.
+      refetch(); 
+      
       setIsEditModalOpen(false);
+      setSelectedProject(null);
     } catch (error) {
       toast.error((error as Error).message);
     }
