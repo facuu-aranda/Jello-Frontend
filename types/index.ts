@@ -63,13 +63,13 @@ export interface Subtask {
 }
 
 export interface Label {
-  id: string;
+  _id: string;
   name: string;
   color: string;
 }
 
 export interface Attachment {
-  id: string;
+  _id: string;
   name: string;
   url: string;
   size: string;
@@ -140,4 +140,30 @@ export interface SearchResult {
   avatar: string | null;
   skills?: string[];
   banner?: string;
+}
+
+/*------------------------ Notifications --------------------*/
+
+export interface NotificationProjectSummary {
+  _id: string
+  name: string
+}
+
+export interface Notification {
+  _id: string
+  recipient: string
+  sender: UserSummary
+  type:
+    | "project_invitation"
+    | "collaboration_request"
+    | "task_assignment"
+    | "new_comment" // <--- AÑADIDO
+    | "mention"     // <--- AÑADIDO
+    | "generic"
+  project: NotificationProjectSummary
+  task?: string // <--- AÑADIDO (ID de la tarea, opcional)
+  read: boolean
+  status: "pending" | "accepted" | "declined"
+  message: string
+  createdAt: string
 }

@@ -9,8 +9,8 @@ const mockTask: TaskSummary = {
   status: 'in-progress',
   priority: 'high',
   labels: [
-    { id: 'lbl-1', name: 'Backend', color: '#14b8a6' },
-    { id: 'lbl-2', name: 'Feature', color: '#00a3e0' },
+    { _id: 'lbl-1', name: 'Backend', color: '#14b8a6' },
+    { _id: 'lbl-2', name: 'Feature', color: '#00a3e0' },
   ],
   assignees: [
     { id: 'user-1', name: 'Alice', avatarUrl: '/avatars/alice.png' },

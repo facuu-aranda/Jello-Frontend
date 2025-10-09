@@ -25,17 +25,16 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ duration: 0.2 }}
       className={cn(
-        "relative group flex flex-col justify-between rounded-2xl border p-5 shadow-sm transition-all duration-300 ease-in-out hover:shadow-lg",
-        "bg-card text-card-foreground"
+        "relative group flex flex-col justify-between rounded-2xl border p-5 shadow-sm transition-all duration-300 ease-in-out hover:shadow-lg ",
+        "bg-card/60 text-card-foreground"
       )}
     >
-      <div className={cn("absolute inset-0 rounded-2xl opacity-10", project.color)} />
 
       <div className="absolute top-4 right-4">
         <Button
           variant="ghost"
           size="icon"
-          className="rounded-full h-8 w-8 bg-background/50 hover:bg-background/80"
+          className="rounded-full h-8 w-8 bg-background/20 hover:bg-background/80"
           onClick={(e) => {
             e.preventDefault(); // Prevenir navegación al hacer clic en editar
             onEdit(project);
@@ -46,7 +45,7 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
         </Button>
       </div>
 
-      <Link href={`/project/${project.id}`} className="flex flex-col h-full">
+      <Link href={`/project/${project.id}`} className="flex flex-col z-2 h-full">
         <div className="flex-grow">
           <div className="flex items-start justify-between">
             <div className="space-y-2">

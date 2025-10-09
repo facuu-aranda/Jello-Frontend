@@ -1,5 +1,4 @@
-// Archivo: Jello-Frontend/components/modals/create-task-modal.tsx
-
+// Jello-Frontend/components/modals/create-task-modal.tsx
 "use client"
 
 import * as React from "react"
@@ -8,33 +7,36 @@ import { X, Calendar, Flag, Tag, Users, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal"
 import { DatePicker } from "@/components/ui/date-picker"
 import { cn } from "@/lib/utils"
-import { useIsMobile } from "@/hooks/use-mobile"
-import { TaskSummary, Label, UserSummary } from "@/types"
+import { Label, UserSummary, ProjectDetails, Attachment } from "@/types"
+import { AssigneeSelector } from "@/components/forms/assignee-selector"
+import { useApi } from "@/hooks/useApi"
+import { Skeleton } from "@/components/ui/skeleton"
+import { AttachmentList } from "../tasks/attachment-list"
 
 type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
 type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 
-interface TaskFormData {
+// Interfaz para el estado local del formulario
+export interface CreateTaskFormDataState {
   title: string;
   description: string;
   priority: TaskPriority;
   status: TaskStatus;
   dueDate: Date | undefined;
-  labels: string[];
+  labels: Label[]; // Almacenamos el objeto Label completo para la UI
   assignees: string[];
   subtasks: string[];
+  attachments: File[];
 }
 
 interface CreateTaskModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (taskData: Partial<TaskSummary>) => void
+  onSubmit: (taskData: FormData) => void // onSubmit ahora espera un FormData
   defaultStatus?: TaskStatus
   projectId?: string
 }
@@ -44,35 +46,17 @@ const priorityOptions: { value: TaskPriority, label: string, color: string }[] =
   { value: "medium", label: "Medium", color: "text-yellow-500" },
   { value: "high", label: "High", color: "text-orange-500" },
   { value: "critical", label: "Critical", color: "text-red-500" },
-]
+];
 
 const statusOptions: { value: TaskStatus, label: string }[] = [
   { value: "todo", label: "To Do" },
   { value: "in-progress", label: "In Progress" },
   { value: "review", label: "Review" },
   { value: "done", label: "Done" },
-]
-
-const availableLabels: Label[] = [
-    { id: "1", name: "Design", color: "#ec4899" },
-    { id: "2", name: "Frontend", color: "#8b5cf6" },
-    { id: "3", name: "Backend", color: "#14b8a6" },
-    { id: "4", name: "React", color: "#00a3e0" },
-    { id: "5", name: "Documentation", color: "#10b981" },
-    { id: "6", name: "Bug", color: "#ef4444" },
-    { id: "7", name: "Feature", color: "#f59e0b" },
-]
-
-type MockTeamMember = { id: string; name: string; email: string; avatar: string; };
-const mockTeamMembers: MockTeamMember[] = [
-  { id: "1", name: "Sarah Johnson", email: "sarah@example.com", avatar: "/sarah-avatar.png" },
-  { id: "2", name: "Mike Chen", email: "mike@example.com", avatar: "/mike-avatar.jpg" },
-  { id: "3", name: "Alex Rivera", email: "alex@example.com", avatar: "/diverse-user-avatars.png" },
-  { id: "4", name: "Emma Davis", email: "emma@example.com", avatar: "/diverse-user-avatars.png" },
-]
+];
 
 export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'todo', projectId }: CreateTaskModalProps) {
-  const [formData, setFormData] = React.useState<TaskFormData>({
+  const [formData, setFormData] = React.useState<CreateTaskFormDataState>({
     title: "",
     description: "",
     priority: "medium",
@@ -81,18 +65,26 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
     labels: [],
     assignees: [],
     subtasks: [],
+    attachments: [],
   });
+  
+  const { data: project, isLoading: isLoadingProject } = projectId ? useApi<ProjectDetails>(`/projects/${projectId}`) : { data: undefined, isLoading: false };
+  const { data: availableLabels, isLoading: isLoadingLabels } = projectId ? useApi<Label[]>(`/projects/${projectId}/labels`) : { data: [], isLoading: false };
 
   const [errors, setErrors] = React.useState<Record<string, string>>({})
   const [newSubtask, setNewSubtask] = React.useState("")
-  const isMobile = useIsMobile()
 
   React.useEffect(() => {
     if (isOpen) {
       setFormData(prev => ({ ...prev, status: defaultStatus }));
+    } else {
+      setFormData({
+        title: "", description: "", priority: "medium", status: defaultStatus,
+        dueDate: undefined, labels: [], assignees: [], subtasks: [], attachments: [],
+      });
+      setErrors({});
     }
   }, [defaultStatus, isOpen]);
-
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -103,69 +95,47 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
     return Object.keys(newErrors).length === 0
   }
 
-  // --- FUNCIÓN 'handleSubmit' MODIFICADA ---
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (validateForm()) {
+      // --- INICIO DE LA CORRECCIÓN ---
+      // Construir el objeto FormData para enviar a la API
+      const apiFormData = new FormData();
       
-      const selectedLabels: Label[] = formData.labels
-        .map((id) => availableLabels.find((l) => l.id === id))
-        .filter((l): l is Label => l !== undefined);
+      apiFormData.append('title', formData.title);
+      apiFormData.append('description', formData.description);
+      apiFormData.append('priority', formData.priority);
+      apiFormData.append('status', formData.status);
+      if (formData.dueDate) {
+        apiFormData.append('dueDate', formData.dueDate.toISOString());
+      }
+      
+      // El backend espera arrays stringificados, así que los convertimos
+      apiFormData.append('labels', JSON.stringify(formData.labels.map(l => l._id)));
+      apiFormData.append('assignees', JSON.stringify(formData.assignees));
+      apiFormData.append('subtasks', JSON.stringify(formData.subtasks));
 
-      const selectedAssignees: UserSummary[] = formData.assignees
-        .map((id) => {
-          const member = mockTeamMembers.find((m) => m.id === id);
-          if (!member) return undefined;
-          
-          const userSummary: UserSummary = {
-            id: member.id,
-            name: member.name,
-            avatarUrl: member.avatar,
-          };
-          return userSummary;
-        })
-        .filter((a): a is UserSummary => a !== undefined);
-      
-      // --- CAMBIO CLAVE ---
-      // El backend espera la propiedad 'project', no 'projectId'.
-      // El payload se construye con el nombre de campo correcto.
-      const taskPayload: any = {
-        title: formData.title,
-        description: formData.description,
-        priority: formData.priority,
-        status: formData.status,
-        dueDate: formData.dueDate?.toISOString(),
-        project: projectId, // <-- AQUÍ ESTÁ EL CAMBIO
-        labels: selectedLabels.map(l => l.id), 
-        assignees: selectedAssignees.map(a => a.id),
-      };
+      // Adjuntar cada archivo
+      formData.attachments.forEach(file => {
+        apiFormData.append('attachments', file);
+      });
 
-      onSubmit(taskPayload);
-      
-      setFormData({
-        title: "", description: "", priority: "medium", status: defaultStatus,
-        dueDate: undefined, labels: [], assignees: [], subtasks: [],
-      })
-      setErrors({})
-      onClose()
+      onSubmit(apiFormData); 
+      // --- FIN DE LA CORRECCIÓN ---
     }
   }
 
-  const toggleLabel = (labelId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      labels: prev.labels.includes(labelId) ? prev.labels.filter((id) => id !== labelId) : [...prev.labels, labelId],
-    }))
-  }
-
-  const toggleAssignee = (assigneeId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      assignees: prev.assignees.includes(assigneeId)
-        ? prev.assignees.filter((id) => id !== assigneeId)
-        : [...prev.assignees, assigneeId],
-    }))
-  }
+  const toggleLabel = (label: Label) => {
+    setFormData((prev) => {
+      const isSelected = prev.labels.some(l => l._id === label._id);
+      return {
+        ...prev,
+        labels: isSelected
+          ? prev.labels.filter((l) => l._id !== label._id)
+          : [...prev.labels, label],
+      };
+    });
+  };
 
   const addSubtask = () => {
     if (newSubtask.trim()) {
@@ -177,12 +147,26 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
   const removeSubtask = (index: number) => {
     setFormData((prev) => ({ ...prev, subtasks: prev.subtasks.filter((_, i) => i !== index) }))
   }
+
+  const handleAttachmentAdd = (files: FileList) => {
+    setFormData(prev => ({ ...prev, attachments: [...prev.attachments, ...Array.from(files)] }));
+  };
+
+  const handleAttachmentDelete = (fileName: string) => {
+    setFormData(prev => ({ ...prev, attachments: prev.attachments.filter(f => f.name !== fileName) }));
+  };
   
-  // El JSX del componente no necesita cambios, solo la lógica de handleSubmit.
-  // ... (pega aquí el JSX completo de tu componente)
-    return (
+  const attachmentLikeFiles: Attachment[] = formData.attachments.map((file, index) => ({
+    _id: `${file.name}-${index}`,
+    name: file.name,
+    url: '',
+    size: `${(file.size / 1024).toFixed(1)} KB`,
+    type: file.type.startsWith('image/') ? 'image' : 'document',
+  }));
+
+  return (
     <Modal open={isOpen} onOpenChange={onClose}>
-      <ModalContent className={cn("max-h-[95vh] overflow-hidden", isMobile ? "max-w-[95vw] mx-2" : "max-w-3xl")}>
+      <ModalContent className="max-h-[95vh] overflow-hidden max-w-3xl">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -225,9 +209,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground flex items-center gap-2"><Flag className="w-4 h-4" />Priority</label>
                   <Select value={formData.priority} onValueChange={(value: TaskPriority) => setFormData((prev) => ({ ...prev, priority: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {priorityOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
@@ -240,7 +222,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-foreground">Status</label>
                   <Select value={formData.status} onValueChange={(value: TaskStatus) => setFormData((prev) => ({ ...prev, status: value }))}>
@@ -251,41 +232,49 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
                   </Select>
                 </div>
               </div>
+              
               <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2"><Calendar className="w-4 h-4" />Due Date (Optional)</label>
-                <DatePicker
-                  date={formData.dueDate}
-                  onDateChange={(date: Date | undefined) => setFormData((prev) => ({ ...prev, dueDate: date }))}
-                  placeholder="Select due date..."
-                />
+                <label className="text-sm font-medium flex items-center gap-2"><Calendar className="w-4 h-4" /> Due Date</label>
+                <DatePicker date={formData.dueDate} setDate={(date) => setFormData(prev => ({ ...prev, dueDate: date }))} />
               </div>
-              <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2"><Tag className="w-4 h-4" />Labels</label>
-                <div className="flex flex-wrap gap-2">
-                  {availableLabels.map((label) => (
-                    <motion.button key={label.id} type="button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => toggleLabel(label.id)}
-                      className={cn( "px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium border-2 transition-all min-h-[32px] touch-manipulation",
-                        formData.labels.includes(label.id) ? "border-transparent text-white" : "border-border text-foreground hover:bg-muted",
-                      )}
-                      style={formData.labels.includes(label.id) ? { backgroundColor: label.color } : {}}>
-                      {label.name}
-                    </motion.button>
-                  ))}
+
+              {(!isLoadingLabels && availableLabels && availableLabels.length > 0) && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2"><Tag className="w-4 h-4" />Labels</label>
+                  <div className="flex flex-wrap gap-2">
+                    {availableLabels.map((label) => {
+                      const isSelected = formData.labels.some(l => l._id === label._id);
+                      return (
+                        <motion.button 
+                          key={label._id} type="button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} 
+                          onClick={() => toggleLabel(label)}
+                          className={cn("px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium border-2 transition-all min-h-[32px] touch-manipulation",
+                            isSelected ? "border-transparent text-white" : "border-border text-foreground hover:bg-muted"
+                          )}
+                          style={isSelected ? { backgroundColor: label.color } : {}}>
+                          {label.name}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
+
               <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2"><Users className="w-6 h-6 sm:w-8 sm:h-8" />Assignees</label>
+                <label className="text-sm font-medium text-foreground flex items-center gap-2"><Users className="w-4 h-4" />Assignees</label>
                 <div className="space-y-2 max-h-40 sm:max-h-48 overflow-y-auto">
-                  {mockTeamMembers.map((member) => (
-                    <motion.div key={member.id} className={cn("flex items-center gap-3 p-2 sm:p-3 rounded-xl border-2 cursor-pointer transition-all min-h-[48px] touch-manipulation", formData.assignees.includes(member.id) ? "border-primary bg-primary/10" : "border-border hover:bg-muted")}
-                      whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => toggleAssignee(member.id)}>
-                      <Avatar className="w-6 h-6 sm:w-8 sm:h-8"><AvatarImage src={member.avatar || "/placeholder.svg"} alt={member.name} /><AvatarFallback className="text-xs">{member.name.charAt(0)}</AvatarFallback></Avatar>
-                      <div className="flex-1 min-w-0"><p className="font-medium text-foreground text-sm sm:text-base truncate">{member.name}</p><p className="text-xs sm:text-sm text-muted-foreground truncate">{member.email}</p></div>
-                      {formData.assignees.includes(member.id) && (<Badge variant="secondary" className="text-xs">Assigned</Badge>)}
-                    </motion.div>
-                  ))}
+                  {isLoadingProject || !project ? (
+                    <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
+                  ) : (
+                    <AssigneeSelector
+                      projectMembers={project.members}
+                      selectedAssignees={formData.assignees}
+                      onSelectionChange={(ids) => setFormData(prev => ({ ...prev, assignees: ids }))}
+                    />
+                  )}
                 </div>
               </div>
+              
               <div className="space-y-3">
                 <label className="text-sm font-medium text-foreground">Subtasks</label>
                 <div className="space-y-2">
@@ -301,7 +290,21 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
                   </div>
                 </div>
               </div>
+
+              <div className="space-y-3">
+                <AttachmentList
+                  taskId=""
+                  attachments={attachmentLikeFiles}
+                  isEditing={true}
+                  onAttachmentAdd={handleAttachmentAdd}
+                  onAttachmentDelete={(id) => {
+                    const fileToDelete = attachmentLikeFiles.find(f => f._id === id);
+                    if (fileToDelete) handleAttachmentDelete(fileToDelete.name);
+                  }}
+                />
+              </div>
             </div>
+            
             <div className="flex flex-col sm:flex-row gap-3 p-4 sm:p-6 pt-4 border-t border-border">
               <Button type="submit" className="w-full sm:flex-1 min-h-[44px]">Create Task</Button>
               <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto min-h-[44px] bg-transparent">Cancel</Button>

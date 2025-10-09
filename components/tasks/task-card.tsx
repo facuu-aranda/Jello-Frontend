@@ -41,7 +41,7 @@ export function TaskCard({ task }: TaskCardProps) {
         <div className="flex items-center gap-2 flex-wrap">
           <div className={cn("w-2 h-2 rounded-full", priorityClasses[task.priority])} />
           {task.labels.map(label => (
-            <Badge key={label.id} variant="secondary" className="text-xs px-2 py-0" style={{ backgroundColor: label.color + '20', color: label.color }}>
+            <Badge key={label._id} variant="secondary" className="text-xs px-2 py-0" style={{ backgroundColor: label.color + '20', color: label.color }}>
               {label.name}
             </Badge>
           ))}

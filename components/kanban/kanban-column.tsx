@@ -32,7 +32,7 @@ const statusColorMap: { [key: string]: string } = {
 
 export function KanbanColumn({ id, title, tasks, onAddTask, onTaskClick }: KanbanColumnProps) {
   return (
-    <div className="flex flex-col w-full sm:w-80 md:w-96 bg-card/50 rounded-2xl flex-shrink-0">
+    <div className="flex flex-col w-full sm:w-80 md:w-96 bg-card/50 rounded-2xl flex-shrink-0 overflow-y-auto">
       <div className="flex items-center justify-between p-4 border-b border-border/50">
         <div className="flex items-center gap-2">
           <div className={cn("w-2.5 h-2.5 rounded-full", statusColorMap[id] || 'bg-gray-400')} />
@@ -48,8 +48,8 @@ export function KanbanColumn({ id, title, tasks, onAddTask, onTaskClick }: Kanba
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={cn(
-              "flex-grow p-4 space-y-3 transition-colors duration-200",
-              snapshot.isDraggingOver ? 'bg-primary/10' : ''
+    "p-4 space-y-3 transition-colors duration-200 min-h-[300px] flex-grow", // <-- LÍNEA MODIFICADA
+    snapshot.isDraggingOver ? 'bg-primary/10' : ''
             )}
           >
             {tasks.map((task, index) => (

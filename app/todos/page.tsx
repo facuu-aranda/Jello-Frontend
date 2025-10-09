@@ -177,7 +177,7 @@ export default function PersonalTodosPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Due Date</Label>
-                      <DatePicker date={newTodoDueDate} onDateChange={setNewTodoDueDate} />
+                      <DatePicker date={newTodoDueDate} setDate={setNewTodoDueDate} />
                     </div>
                   </div>
                   <div className="flex justify-end gap-2 pt-2">

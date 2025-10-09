@@ -1,3 +1,5 @@
+// Jello-Frontend/app/project/[projectId]/page.tsx
+
 "use client"
 
 import * as React from 'react'
@@ -15,6 +17,7 @@ import { apiClient } from '@/lib/api'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { DropResult } from '@hello-pangea/dnd';
+import { ActivityFeed } from '@/components/activity/ActivityFeed'
 
 export default function ProjectPage() {
   const params = useParams();
@@ -64,13 +67,12 @@ export default function ProjectPage() {
     setProject(newProjectState);
 
     try {
-      // ✨ CORRECCIÓN: Usamos la ruta correcta de la API que incluye el projectId.
       await apiClient.put(`/projects/${projectId}/tasks/${draggableId}`, { status: destColumnId });
     } catch (err) {
         toast.error("Failed to update task status. Reverting changes.");
         setProject(originalProject);
     }
-  };
+   };
   
   const handleTaskClick = async (taskSummary: TaskSummary) => {
     try {
@@ -89,33 +91,40 @@ export default function ProjectPage() {
     setIsCreateTaskModalOpen(true);
   }
 
-  const handleCreateTask = async (taskData: Partial<TaskSummary>) => {
+  // --- INICIO DE LA CORRECCIÓN: Lógica de 2 pasos para crear tarea con adjuntos ---
+   const handleCreateTask = async (formData: FormData) => {
+    setIsCreateTaskModalOpen(false);
+    toast.info("Creating new task...");
+
     try {
-      await apiClient.post(`/projects/${projectId}/tasks`, taskData);
-      toast.success("Task created successfully!");
+      // CORRECCIÓN: No manipulamos el FormData. Lo enviamos directamente.
+      // El backend ya sabe cómo interpretar tanto los campos de texto como los archivos.
+      const newTask = await apiClient.post<TaskSummary>(`/projects/${projectId}/tasks`, formData);
+      
+      toast.success(`Task "${newTask.title}" created!`);
+
+      // Refresca toda la data del proyecto para que la UI esté 100% sincronizada.
       refetch();
-      setIsCreateTaskModalOpen(false);
+
     } catch (err) {
       toast.error(`Failed to create task: ${(err as Error).message}`);
     }
   };
 
+  // --- FIN DE LA CORRECCIÓN ---
+
+
   const handleEditProject = async (formData: FormData) => {
     if (!project) return;
     toast.info("Saving changes...");
     try {
-      // 1. Esperamos a que la petición de actualización se complete.
       await apiClient.put(
         `/projects/${project.id}`,
         formData
       );
       
-      // 2. ✨ EL CAMBIO CLAVE: Esperamos a que la recarga de datos termine.
-      // Esto pausa la ejecución hasta que `refetch` haya obtenido los datos frescos
-      // y actualizado el estado 'project' en el hook.
       await refetch();
       
-      // 3. Solo después de que todo se haya actualizado, mostramos el éxito y cerramos el modal.
       toast.success("Project updated successfully!");
       setIsEditModalOpen(false);
 
@@ -160,25 +169,26 @@ export default function ProjectPage() {
     return <AppLayout><div>Project not found.</div></AppLayout>
   }
 
-
   return (
     <>
       <AppLayout>
-        {/* ✨ CORRECCIÓN: Ajustamos la estructura para un único contenedor de scroll */}
-        <div className="flex flex-col h-full overflow-hidden">
-            <ProjectHeader 
-              project={project!} 
-              onEdit={() => setIsEditModalOpen(true)}
-              onInviteMembers={() => setIsInviteModalOpen(true)}
+        <div className="space-y-6">
+          <ProjectHeader 
+            project={project!} 
+            onEdit={() => setIsEditModalOpen(true)}
+            onInviteMembers={() => setIsInviteModalOpen(true)}
+          />
+          <div className="min-h-[65vh]">
+            <KanbanBoard
+              project={project!}
+              onTaskStatusChange={handleTaskStatusChange}
+              onTaskClick={handleTaskClick}
+              onAddTask={handleOpenCreateTaskModal}
             />
-            <div className="flex-1 overflow-x-auto">
-              <KanbanBoard
-                  project={project!}
-                  onTaskStatusChange={handleTaskStatusChange}
-                  onTaskClick={handleTaskClick}
-                  onAddTask={handleOpenCreateTaskModal}
-              />
-            </div>
+          </div>
+          <div className="border-t border-border p-6">
+            <ActivityFeed projectId={projectId} />
+          </div>
         </div>
       </AppLayout>
 
@@ -189,4 +199,3 @@ export default function ProjectPage() {
     </>
   )
 }
-

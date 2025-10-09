@@ -128,7 +128,7 @@ export default function MyTasksPage() {
                                         </div>
                                         <div className="flex flex-col items-end gap-2">
                                             <div className="flex gap-1">
-                                                {task.labels.map(label => <Badge key={label.id} variant="secondary" style={{ backgroundColor: label.color + '20', color: label.color }}>{label.name}</Badge>)}
+                                                {task.labels.map(label => <Badge key={label._id} variant="secondary" style={{ backgroundColor: label.color + '20', color: label.color }}>{label.name}</Badge>)}
                                             </div>
                                             <Button asChild variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
                                                 <Link href={`/project/${task.projectId}`}>Go to project <ArrowRight className="w-3 h-3 ml-2" /></Link>

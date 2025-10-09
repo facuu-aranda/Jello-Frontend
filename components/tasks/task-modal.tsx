@@ -1,10 +1,11 @@
-// Archivo: Jello-Frontend/components/tasks/task-modal.tsx
+// Jello-Frontend/components/tasks/task-modal.tsx
 
 "use client"
+
 import * as React from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { X, Calendar, Flag, Trash2, Edit, ArrowRight } from "lucide-react"
+import { X, Edit, ArrowRight, Tag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -13,176 +14,274 @@ import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal"
 import { SubtaskList } from "./subtask-list"
 import { CommentSection } from "./comment-section"
 import { AttachmentList } from "./attachment-list"
-import { TaskDetails, Label, Comment, Attachment } from "@/types"
+import { TaskDetails, Label, Comment } from "@/types"
 import { toast } from "sonner"
 import { apiClient } from "@/lib/api"
-
+import { useApi } from "@/hooks/useApi"
+import { cn } from "@/lib/utils"
+import { AttachmentViewerModal } from "../modals/AttachmentViewerModal"
 
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
   task: TaskDetails | null;
-  onSubmit?: (taskData: Partial<TaskDetails>) => void;
-  onDelete?: (taskId: string) => void;
-  showGoToProjectButton?: boolean;
-  mode?: "view" | "edit";
   onDataChange?: () => void;
+  showGoToProjectButton?: boolean;
 }
 
-const availableLabels: Label[] = [
-    { id: "1", name: "Design", color: "#ec4899" },
-    { id: "2", name: "Frontend", color: "#8b5cf6" },
-    { id: "3", name: "Backend", color: "#14b8a6" },
-    { id: "4", name: "Bug", color: "#be123c" },
-    { id: "5", name: "Feature", color: "#00a3e0" },
-    { id: "6", name: "Marketing", color: "#ff6f61" },
-];
-
-
-export function TaskModal({ isOpen, onClose, task, onSubmit, onDelete, showGoToProjectButton = false, mode = "view", onDataChange }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, task, onDataChange, showGoToProjectButton }: TaskModalProps) {
+  const [isEditing, setIsEditing] = React.useState(false);
   const [currentTask, setCurrentTask] = React.useState<TaskDetails | null>(task);
-  const [isEditing, setIsEditing] = React.useState(mode === "edit");
+
+  const availableLabels = currentTask
+    ? useApi<Label[]>(`/projects/${currentTask.projectId}/labels`).data
+    : undefined;
+  const [viewingAttachmentId, setViewingAttachmentId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    if (isOpen) {
-      setCurrentTask(task);
-      setIsEditing(mode === "edit");
+    setCurrentTask(task);
+    setIsEditing(false);
+  }, [task]);
+
+  // 2. Esta función ahora recibe el ID y lo guarda en el estado.
+  const handleViewAttachment = (attachmentId: string) => {
+    setViewingAttachmentId(attachmentId);
+  };
+  const handleCommentSubmit = async (content: string, attachmentFile: File | null) => {
+    if (!currentTask) return;
+    if (!content.trim() && !attachmentFile) return;
+
+    const formData = new FormData();
+    formData.append('content', content);
+    if (attachmentFile) {
+      formData.append('attachment', attachmentFile);
     }
-  }, [isOpen, task, mode]);
 
-  const handleSave = () => { if (currentTask && onSubmit) { onSubmit(currentTask); } setIsEditing(false); }
-  const handleDelete = () => { if (currentTask?.id && onDelete) { onDelete(currentTask.id); onClose(); } }
-  
-  const handleLabelToggle = (label: Label) => {
-    if (!currentTask) return;
-    const newLabels = currentTask.labels.some((l) => l.id === label.id)
-      ? currentTask.labels.filter((l) => l.id !== label.id)
-      : [...currentTask.labels, label];
-    setCurrentTask({ ...currentTask, labels: newLabels });
-  }
-
-  const handleUpdateField = <K extends keyof TaskDetails>(field: K, value: TaskDetails[K]) => {
-    setCurrentTask(prev => prev ? { ...prev, [field]: value } : null);
-  }
-  
-  const handleAttachmentAdd = async (files: FileList) => {
-    // ... (lógica implementada en la respuesta anterior, se mantiene igual)
-    if (!currentTask) return;
-    toast.info(`Uploading ${files.length} file(s)...`);
     try {
-      for (const file of Array.from(files)) {
-        const formData = new FormData();
-        formData.append('file', file);
-        const uploadResponse = await apiClient.post<{ fileUrl: string }>('/upload', formData);
-        const newAttachmentData = { name: file.name, url: uploadResponse.fileUrl, size: `${(file.size / 1024).toFixed(1)} KB`, type: file.type.startsWith('image/') ? 'image' : 'document' };
-        const newAttachment = await apiClient.post<Attachment>(`/tasks/${currentTask.id}/attachments`, newAttachmentData);
-        setCurrentTask(prev => prev ? { ...prev, attachments: [...prev.attachments, newAttachment] } : null);
-      }
-      toast.success("File(s) uploaded successfully!");
+      toast.info("Adding comment...");
+      const newComment = await apiClient.post<Comment>(`/tasks/${currentTask.id}/comments`, formData);
+
+      // Actualización local inmediata del estado del modal
+      setCurrentTask(prevTask => {
+        if (!prevTask) return null;
+        return {
+          ...prevTask,
+          comments: [...prevTask.comments, newComment]
+        };
+      });
+
+      toast.success("Comment added!");
+
+      // Refresca los datos de la página principal en segundo plano para actualizar contadores
       onDataChange?.();
     } catch (error) {
-      toast.error(`Upload failed: ${(error as Error).message}`);
+      toast.error(`Failed to add comment: ${(error as Error).message}`);
     }
   };
+  // --- FIN DE LA CORRECCIÓN ---
+
+  const handleSave = async () => {
+    if (!currentTask) return;
+    try {
+      const payload = {
+        title: currentTask.title,
+        description: currentTask.description,
+        labels: currentTask.labels.map(label => label._id)
+      };
+      await apiClient.put(`/projects/${currentTask.projectId}/tasks/${currentTask.id}`, payload);
+      toast.success("Task updated successfully!");
+      setIsEditing(false);
+      onDataChange?.();
+    } catch (error) {
+      toast.error(`Failed to save task: ${(error as Error).message}`);
+    }
+  };
+
+  const handleLabelToggle = (labelToToggle: Label) => {
+    if (!currentTask || !isEditing) return;
+    setCurrentTask(prevTask => {
+      if (!prevTask) return null;
+      const isSelected = prevTask.labels.some(l => l._id === labelToToggle._id);
+      const newLabels = isSelected
+        ? prevTask.labels.filter(l => l._id !== labelToToggle._id)
+        : [...prevTask.labels, labelToToggle];
+      return { ...prevTask, labels: newLabels };
+    });
+  };
+
+  const handleAttachmentAdd = async (files: FileList) => {
+    if (!currentTask) return;
+    toast.info(`Uploading ${files.length} file(s)...`);
+    const uploadPromises = Array.from(files).map(file => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiClient.post(`/tasks/${currentTask.id}/attachments`, formData);
+    });
+
+    try {
+      await Promise.all(uploadPromises);
+      toast.success(`${files.length} file(s) uploaded.`);
+      // Refresca la data de la tarea actual para mostrar los nuevos attachments
+      const updatedTask = await apiClient.get<TaskDetails>(`/tasks/${currentTask.id}`);
+      setCurrentTask(updatedTask);
+      onDataChange?.(); // Actualiza la página principal en segundo plano
+    } catch (error) {
+      toast.error("Failed to upload attachments.");
+      console.error(error);
+    }
+  };
+
 
   const handleAttachmentDelete = async (attachmentId: string) => {
-    // ... (lógica implementada en la respuesta anterior, se mantiene igual)
     if (!currentTask) return;
-    if (!window.confirm("Are you sure?")) return;
-    toast.info("Deleting attachment...");
+
+    // 1. Filtra el adjunto a eliminar de la lista actual
+    const updatedAttachments = currentTask.attachments.filter(
+      (att) => att._id !== attachmentId
+    );
+
     try {
-        await apiClient.del(`/tasks/${currentTask.id}/attachments/${attachmentId}`);
-        setCurrentTask(prev => prev ? { ...prev, attachments: prev.attachments.filter(a => a.id !== attachmentId) } : null);
-        toast.success("Attachment deleted.");
-        onDataChange?.();
+      toast.info("Deleting attachment...");
+      // 2. Llama al endpoint PUT de la tarea, enviando solo el array de adjuntos actualizado
+      await apiClient.put(`/projects/${currentTask.projectId}/tasks/${currentTask.id}`, {
+        attachments: updatedAttachments.map(att => att._id) // Enviamos solo los IDs
+      });
+
+      // 3. Actualiza el estado local del modal con la nueva lista de adjuntos
+      setCurrentTask(prev => prev ? { ...prev, attachments: updatedAttachments } : null);
+
+      toast.success("Attachment deleted.");
+
+      // 4. Notifica a la página principal para que se refresque
+      onDataChange?.();
     } catch (error) {
-        toast.error(`Failed to delete: ${(error as Error).message}`);
+      toast.error(`Failed to delete attachment: ${(error as Error).message}`);
+      // Nota: En un caso real, aquí se podría revertir el estado si la llamada falla.
     }
   };
 
-  // --- FUNCIÓN IMPLEMENTADA ---
-  const handleCommentAdd = async (formData: FormData) => {
-    if (!currentTask) return;
-    toast.info("Posting comment...");
-    try {
-        const newComment = await apiClient.post<Comment>(`/tasks/${currentTask.id}/comments`, formData);
-        setCurrentTask(prev => prev ? { ...prev, comments: [newComment, ...prev.comments] } : null);
-        toast.success("Comment posted!");
-        onDataChange?.();
-    } catch (error) {
-        toast.error(`Failed to post comment: ${(error as Error).message}`);
-    }
-  };
-
-
-  if (!isOpen || !currentTask) return null;
-
+  if (!isOpen || !currentTask) {
+    return null;
+  }
   return (
-    <Modal open={isOpen} onOpenChange={onClose}>
-      <ModalContent className="w-[95vw] max-w-4xl max-h-[90vh] grid grid-rows-[auto,1fr] p-0 overflow-hidden glass-card">
-        <ModalHeader className="flex-shrink-0 border-b border-border/50 px-6 pt-6 pb-4">
-          {/* ... El resto del JSX se mantiene igual ... */}
-          <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                    {isEditing ? (
-                        <Input value={currentTask.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleUpdateField('title', e.target.value)} className="text-xl font-bold h-auto p-0 border-none focus-visible:ring-0" />
-                    ) : (
-                        <h2 className="text-xl font-bold text-foreground truncate">{currentTask.title}</h2>
-                    )}
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    {isEditing ? (
-                        <Button size="sm" onClick={handleSave}>Save</Button>
-                    ) : (
-                        <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}><Edit className="w-4 h-4 mr-2" />Edit</Button>
-                    )}
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={handleDelete}><Trash2 className="w-4 h-4" /></Button>
-                    {showGoToProjectButton && <Button asChild size="sm" variant="outline"><Link href={`/project/${currentTask.projectId}`}>Go to Project <ArrowRight className="w-4 h-4 ml-2" /></Link></Button>}
-                    <Button variant="ghost" size="icon" onClick={onClose}><X className="w-4 h-4" /></Button>
-                </div>
-            </div>
-            <div className="flex items-center gap-6 text-sm text-muted-foreground mt-2">
-                <div className="flex items-center gap-2"><Flag className="w-4 h-4" /><span>{currentTask.priority}</span></div>
-                <div className="flex items-center gap-2"><Calendar className="w-4 h-4" /><span>{currentTask.dueDate ? new Date(currentTask.dueDate).toLocaleDateString() : 'No due date'}</span></div>
-            </div>
-        </ModalHeader>
-        <div className="overflow-y-auto grid lg:grid-cols-3 min-h-0">
-          <div className="lg:col-span-2 space-y-6 p-6">
-            <div className="space-y-3">
-              <h4 className="font-medium text-foreground">Description</h4>
-              {isEditing ? (<Textarea value={currentTask.description || ''} onChange={(e) => handleUpdateField('description', e.target.value)} className="min-h-[100px]" />) : (<p className="text-sm text-muted-foreground">{currentTask.description || "No description provided."}</p>)}
-            </div>
-            <div className="space-y-3">
-              <h4 className="font-medium text-foreground">Labels</h4>
-              <div className="flex flex-wrap gap-2">
-                {isEditing ? (
-                  availableLabels.map(label => {
-                    const isSelected = currentTask.labels.some((l) => l.id === label.id);
-                    return (
-                      <Badge key={label.id} variant={"outline"} className="cursor-pointer transition-all border-2 text-sm py-1 px-3"
-                        style={{ backgroundColor: isSelected ? `${label.color}40` : 'transparent', color: label.color, borderColor: label.color }}
-                        onClick={() => handleLabelToggle(label)}>
-                        {label.name}
-                      </Badge>
-                    )
-                  })
-                ) : (
-                  currentTask.labels.map((label: Label) => (
-                    <Badge key={label.id} variant="secondary" className="text-sm py-1 px-3" style={{ backgroundColor: label.color + "20", color: label.color }}>
-                      {label.name}
-                    </Badge>
-                  ))
+    <>
+      <Modal open={isOpen} onOpenChange={onClose}>
+        <ModalContent className="max-h-screen overflow-hidden max-w-4xl p-0">
+          <ModalHeader className="p-4 border-b border-border/50">
+            <div className="flex items-center justify-between">
+              {isEditing ? (
+                <Input
+                  value={currentTask.title}
+                  onChange={(e) => setCurrentTask({ ...currentTask, title: e.target.value })}
+                  className="text-lg font-semibold border-2 border-primary"
+                />
+              ) : (
+                <h2 className="text-lg font-semibold text-foreground">{currentTask.title}</h2>
+              )}
+
+              <div className="flex items-center gap-2">
+                {showGoToProjectButton && (
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href={`/project/${currentTask.projectId}`}>
+                      Go to project <ArrowRight className="w-3 h-3 ml-2" />
+                    </Link>
+                  </Button>
                 )}
+
+                {isEditing ? (
+                  <>
+                    <Button size="sm" onClick={handleSave}>Save</Button>
+                    <Button size="sm" variant="ghost" onClick={() => {
+                      setCurrentTask(task);
+                      setIsEditing(false);
+                    }}>Cancel</Button>
+                  </>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}><Edit className="w-4 h-4 mr-2" /> Edit</Button>
+                )}
+
+                <Button variant="ghost" size="icon" onClick={onClose}><X className="w-4 h-4" /></Button>
               </div>
             </div>
-            <SubtaskList subtasks={currentTask.subtasks} isEditing={isEditing} onSubtaskAdd={() => { }} onSubtaskDelete={() => { }} onSubtaskToggle={() => {}} />
-            <CommentSection comments={currentTask.comments} onCommentAdd={handleCommentAdd} />
+          </ModalHeader>
+          <div className="grid grid-cols-1 lg:grid-cols-3 max-h-[calc(100vh-80px)] overflow-y-auto">
+            <div className="lg:col-span-2 space-y-6 p-6">
+              <div className="space-y-3">
+                <h4 className="font-medium text-foreground">Description</h4>
+                {isEditing ? (
+                  <Textarea
+                    value={currentTask.description || ''}
+                    onChange={(e) => setCurrentTask({ ...currentTask, description: e.target.value })}
+                    className="min-h-[120px]"
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">{currentTask.description || "No description provided."}</p>
+                )}
+              </div>
+
+              {(isEditing || (currentTask.labels && currentTask.labels.length > 0)) && (
+                <div className="space-y-3">
+                  <h4 className="font-medium text-foreground flex items-center gap-2"><Tag className="w-4 h-4" />Labels</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {isEditing ? (
+                      availableLabels?.map((label: Label) => {
+                        const isSelected = currentTask.labels.some(l => l._id === label._id);
+                        return (
+                          <Badge
+                            key={label._id}
+                            variant={"outline"}
+                            className="cursor-pointer transition-all border-2 text-sm py-1 px-3"
+                            style={{
+                              backgroundColor: isSelected ? `${label.color}40` : 'transparent',
+                              borderColor: label.color,
+                              color: label.color,
+                            }}
+                            onClick={() => handleLabelToggle(label)}
+                          >
+                            {label.name}
+                          </Badge>
+                        )
+                      })
+                    ) : (
+                      currentTask.labels.map((label: Label) => (
+                        <Badge key={label._id} variant="secondary" className="text-sm py-1 px-3" style={{ backgroundColor: label.color + "20", color: label.color }}>
+                          {label.name}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+              <SubtaskList subtasks={currentTask.subtasks} isEditing={isEditing} onSubtaskAdd={() => { }} onSubtaskDelete={() => { }} onSubtaskToggle={() => { }} />
+
+              {/* --- INICIO DE LA CORRECCIÓN --- */}
+              <CommentSection
+                comments={currentTask.comments}
+                taskId={currentTask.id}
+                onSubmitComment={handleCommentSubmit}
+              />
+              {/* --- FIN DE LA CORRECCIÓN --- */}
+
+            </div>
+            <div className="lg:col-span-1 lg:border-l border-border/50 p-6 space-y-6">
+              <AttachmentList 
+                attachments={currentTask.attachments} 
+                isEditing={isEditing} 
+                taskId={currentTask.id}
+                onAttachmentAdd={handleAttachmentAdd}
+                onAttachmentDelete={handleAttachmentDelete}
+                onAttachmentView={handleViewAttachment}
+              />
+            </div>
           </div>
-          <div className="lg:col-span-1 lg:border-l border-border/50 p-6 space-y-6">
-            <AttachmentList attachments={currentTask.attachments} isEditing={isEditing} onAttachmentAdd={handleAttachmentAdd} onAttachmentDelete={handleAttachmentDelete}/>
-          </div>
-        </div>
-      </ModalContent>
-    </Modal>
+        </ModalContent>
+      </Modal>
+      <AttachmentViewerModal 
+        isOpen={!!viewingAttachmentId}
+        onClose={() => setViewingAttachmentId(null)}
+        attachments={currentTask.attachments}
+        selectedAttachmentId={viewingAttachmentId}
+      />
+    </>
   )
 }
