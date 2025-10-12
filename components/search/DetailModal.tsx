@@ -7,17 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { UserPlus, Handshake } from "lucide-react"
 import { SkillsEditor } from "@/components/profile/SkillsEditor"
-
-// Definimos un tipo que pueda ser usado por varios componentes
-export type SearchResult = {
-  type: 'user' | 'project'
-  id: string
-  name: string
-  description: string
-  avatar?: string
-  banner?: string
-  skills?: string[] // Habilidades para los usuarios
-}
+import { SearchResult } from "@/types"
 
 interface DetailModalProps {
   isOpen: boolean
@@ -37,7 +27,7 @@ export function DetailModal({ isOpen, onClose, result, onInvite, onCollaborate }
           <img src={result.banner || "/placeholder.jpg"} alt={`${result.name} banner`} className="w-full h-32 object-cover rounded-t-2xl" />
           <div className="absolute -bottom-10 left-6">
             <Avatar className="w-20 h-20 rounded-lg border-4 border-background">
-              <AvatarImage src={result.avatar} />
+              <AvatarImage src={result.avatar ?? undefined} />
               <AvatarFallback className="rounded-lg text-2xl">{result.name.charAt(0)}</AvatarFallback>
             </Avatar>
           </div>

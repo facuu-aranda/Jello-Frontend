@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { UserPlus, Handshake } from "lucide-react"
 import { InviteUserModal } from "@/components/modals/InviteUserModal"
 import { CollaborateModal } from "@/components/modals/CollaborateModal"
-import { DetailModal, type SearchResult } from "@/components/modals/DetailModal" // Importamos el nuevo modal y el tipo
-
+import { SearchResult } from "@/types" // Importa el tipo centralizado
+import { DetailModal } from "@/components/modals/DetailModal"
 interface SearchResultCardProps {
   result: SearchResult
 }
@@ -36,7 +36,7 @@ export function SearchResultCard({ result }: SearchResultCardProps) {
         <div className="flex-grow">
           <div className="flex items-start gap-4">
             <Avatar className="w-12 h-12 rounded-lg">
-              <AvatarImage src={result.avatar} />
+              <AvatarImage src={result.avatar ?? undefined} />
               <AvatarFallback className="rounded-lg">{result.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
@@ -76,11 +76,24 @@ export function SearchResultCard({ result }: SearchResultCardProps) {
         onCollaborate={() => setCollaborateModalOpen(true)}
       />
       {result.type === 'user' && (
-        <InviteUserModal isOpen={isInviteModalOpen} onClose={() => setInviteModalOpen(false)} user={result} />
+       <InviteUserModal 
+  isOpen={isInviteModalOpen} 
+  onClose={() => setInviteModalOpen(false)} 
+  user={{
+    id: result.id,
+    name: result.name,
+    avatarUrl: result.avatar // Mapeamos 'avatar' a 'avatarUrl'
+  }} 
+/>
       )}
       {result.type === 'project' && (
-        <CollaborateModal isOpen={isCollaborateModalOpen} onClose={() => setCollaborateModalOpen(false)} projectName={result.name} />
-      )}
+  <CollaborateModal 
+    isOpen={isCollaborateModalOpen} 
+    onClose={() => setCollaborateModalOpen(false)} 
+    projectName={result.name}
+    projectId={result.id} 
+  />
+)}
     </>
   )
 }

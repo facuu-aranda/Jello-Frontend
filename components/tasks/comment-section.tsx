@@ -1,123 +1,132 @@
+// Jello-Frontend/components/tasks/comment-section.tsx
+
 "use client"
 
 import * as React from "react"
 import { motion } from "framer-motion"
-import { Send, AtSign } from "lucide-react"
+import { Send, Paperclip, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-
-interface Comment {
-  id: string
-  author: {
-    id: string
-    name: string
-    avatar?: string
-  }
-  content: string
-  timestamp: string
-  mentions?: string[]
-}
+import { Comment } from "@/types"
+import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent } from "@/components/ui/dialog" 
 
 interface CommentSectionProps {
-  comments: Comment[]
-  onCommentAdd?: (content: string) => void
+  comments: Comment[];
+  taskId: string;
+  // --- INICIO DE LA CORRECCIÓN: Props modificadas ---
+  onSubmitComment: (content: string, attachmentFile: File | null) => Promise<void>;
+  // --- FIN DE LA CORRECCIÓN ---
 }
 
-const mockComments: Comment[] = [
-  {
-    id: "1",
-    author: { id: "1", name: "Sarah", avatar: "/sarah-avatar.png" },
-    content: "I've started working on the wireframes. Should have the first draft ready by tomorrow.",
-    timestamp: "2 hours ago",
-  },
-  {
-    id: "2",
-    author: { id: "2", name: "Mike", avatar: "/mike-avatar.jpg" },
-    content: "@Sarah looks great! Can you also include the mobile version?",
-    timestamp: "1 hour ago",
-    mentions: ["Sarah"],
-  },
-  {
-    id: "3",
-    author: { id: "3", name: "Alex", avatar: "/diverse-user-avatars.png" },
-    content: "I can help with the responsive design once the desktop version is finalized.",
-    timestamp: "30 minutes ago",
-  },
-]
-
-export function CommentSection({ comments = mockComments, onCommentAdd }: CommentSectionProps) {
+export function CommentSection({ comments, taskId, onSubmitComment }: CommentSectionProps) {
   const [newComment, setNewComment] = React.useState("")
+  const [attachmentFile, setAttachmentFile] = React.useState<File | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [expandedImage, setExpandedImage] = React.useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (newComment.trim()) {
-      onCommentAdd?.(newComment.trim())
-      setNewComment("")
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      setAttachmentFile(event.target.files[0]);
     }
-  }
+  };
+
+  // --- INICIO DE LA CORRECCIÓN: handleSubmit modificado ---
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() && !attachmentFile) return;
+
+    setIsSubmitting(true);
+    await onSubmitComment(newComment, attachmentFile);
+    setNewComment("");
+    setAttachmentFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    setIsSubmitting(false);
+  };
+  // --- FIN DE LA CORRECCIÓN ---
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h4 className="font-medium text-foreground">Comments</h4>
-        <span className="text-sm text-muted-foreground">{comments.length} comments</span>
-      </div>
-
-      {/* Comments List */}
-      <div className="space-y-4 max-h-64 overflow-y-auto">
+    <div className="space-y-4">
+      <h4 className="font-medium text-foreground">Comments ({comments.length})</h4>
+      <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
         {comments.map((comment, index) => (
-          <motion.div
-            key={comment.id}
+          <motion.div 
+            key={comment.id} 
             className="flex gap-3"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
+            transition={{ delay: index * 0.05 }}
           >
-            <Avatar className="w-8 h-8">
-              <AvatarImage src={comment.author.avatar || "/placeholder.svg"} alt={comment.author.name} />
-              <AvatarFallback className="text-xs">{comment.author.name.charAt(0)}</AvatarFallback>
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={comment.author.avatarUrl || ''} />
+              <AvatarFallback>{comment.author.name.charAt(0)}</AvatarFallback>
             </Avatar>
-
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-sm text-foreground">{comment.author.name}</span>
-                <span className="text-xs text-muted-foreground">{comment.timestamp}</span>
+            <div className="flex-1">
+              <div className="flex items-baseline gap-2">
+                <p className="font-semibold text-sm">{comment.author.name}</p>
+                <p className="text-xs text-muted-foreground">{new Date(comment.timestamp).toLocaleString()}</p>
               </div>
-              <div className="text-sm text-foreground">
-                {comment.content.split(" ").map((word, i) => (
-                  <span key={i}>
-                    {word.startsWith("@") ? <span className="text-primary font-medium">{word}</span> : word}
-                    {i < comment.content.split(" ").length - 1 && " "}
-                  </span>
-                ))}
-              </div>
+              <p className="text-sm text-foreground/90 whitespace-pre-wrap">{comment.content}</p>
+              {comment.attachmentUrl && (
+                <button 
+                  onClick={() => setExpandedImage(comment.attachmentUrl!)}
+                  className="mt-2 block cursor-pointer"
+                >
+                  <img 
+                    src={comment.attachmentUrl} 
+                    alt="Attachment" 
+                    className="max-w-xs max-h-40 rounded-lg object-cover border border-border"
+                  />
+                </button>
+              )}
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Add Comment Form */}
       <form onSubmit={handleSubmit} className="space-y-3">
         <div className="relative">
           <Textarea
-            placeholder="Write a comment... Use @ to mention someone"
+            placeholder="Write a comment..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             className="min-h-[80px] pr-12"
+            disabled={isSubmitting}
           />
-          <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 w-8 h-8">
-            <AtSign className="w-4 h-4" />
-          </Button>
         </div>
-        <div className="flex justify-end">
-          <Button type="submit" size="sm" disabled={!newComment.trim()}>
-            <Send className="w-4 h-4 mr-2" />
-            Comment
-          </Button>
+
+        {attachmentFile && (
+            <div className="flex items-center justify-between p-2 bg-muted rounded-lg text-sm">
+                <span className="truncate">{attachmentFile.name}</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setAttachmentFile(null)}>
+                   <X className="h-4 w-4" />
+                </Button>
+            </div>
+        )}
+        
+        <div className="flex justify-between items-center">
+            <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isSubmitting}>
+                <Paperclip className="w-4 h-4" />
+            </Button>
+            <Input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+
+            <Button type="submit" size="sm" disabled={(!newComment.trim() && !attachmentFile) || isSubmitting}>
+                <Send className="w-4 h-4 mr-2" />
+                {isSubmitting ? "Commenting..." : "Comment"}
+            </Button>
         </div>
       </form>
+
+    <Dialog open={!!expandedImage} onOpenChange={() => setExpandedImage(null)}>
+      <DialogContent className="p-0 border-none bg-transparent w-auto max-w-4xl">
+        <img src={expandedImage || ''} alt="Expanded attachment" className="w-full h-auto rounded-lg" />
+      </DialogContent>
+    </Dialog>
     </div>
   )
 }

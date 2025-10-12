@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { AppLayout } from "@/components/layout/app-layout"
 import { Button } from "@/components/ui/button"
@@ -9,27 +9,14 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Icon } from "@/components/ui/icon"
 import { Progress } from "@/components/ui/progress"
-import { Trash2, Plus, CheckSquare } from "lucide-react"
+import { Trash2, Plus, CheckSquare, AlertTriangle } from "lucide-react"
 import { DatePicker } from "@/components/ui/date-picker"
-
-interface Todo {
-  id: string
-  text: string
-  completed: boolean
-  priority: "low" | "medium" | "high"
-  category: string
-  dueDate?: Date
-  createdAt: string
-}
-
-const mockTodos: Todo[] = [
-  { id: "1", text: "Review quarterly budget reports", completed: false, priority: "high", category: "Work", dueDate: new Date("2024-01-15"), createdAt: "2024-01-10" },
-  { id: "2", text: "Schedule dentist appointment", completed: false, priority: "medium", category: "Personal", createdAt: "2024-01-09" },
-  { id: "3", text: "Update portfolio website", completed: true, priority: "low", category: "Projects", createdAt: "2024-01-08" },
-  { id: "4", text: "Plan weekend trip", completed: false, priority: "low", category: "Personal", dueDate: new Date("2024-01-20"), createdAt: "2024-01-07" },
-]
+import { useApi } from "@/hooks/useApi"
+import { apiClient } from "@/lib/api"
+import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Todo } from "@/types"
 
 const categories = ["All", "Work", "Personal", "Projects", "Health"]
 const priorities = [
@@ -40,10 +27,11 @@ const priorities = [
 ]
 
 export default function PersonalTodosPage() {
-  const [todos, setTodos] = useState<Todo[]>(mockTodos)
+  const { data: todos, isLoading, error, refetch } = useApi<Todo[]>('/todos');
+  
   const [isAdding, setIsAdding] = useState(false)
   const [newTodoText, setNewTodoText] = useState("")
-  const [newTodoPriority, setNewTodoPriority] = useState<"low" | "medium" | "high">("medium")
+  const [newTodoPriority, setNewTodoPriority] = useState<Todo['priority']>("medium")
   const [newTodoCategory, setNewTodoCategory] = useState("Personal")
   const [newTodoDueDate, setNewTodoDueDate] = useState<Date | undefined>()
 
@@ -52,35 +40,61 @@ export default function PersonalTodosPage() {
   const [showCompleted, setShowCompleted] = useState(true)
   const [isManaging, setIsManaging] = useState(false)
 
-  const addTodo = () => {
-    if (!newTodoText.trim()) return
-    const newTodo: Todo = {
-      id: Date.now().toString(),
-      text: newTodoText,
-      completed: false,
-      priority: newTodoPriority,
-      category: newTodoCategory,
-      dueDate: newTodoDueDate,
-      createdAt: new Date().toISOString(),
+  const addTodo = async () => {
+    if (!newTodoText.trim()) return;
+    try {
+      await apiClient.post('/todos', {
+        text: newTodoText,
+        priority: newTodoPriority,
+        category: newTodoCategory,
+        dueDate: newTodoDueDate?.toISOString()
+      });
+      toast.success("Todo added!");
+      refetch();
+      setNewTodoText(""); 
+      setNewTodoPriority("medium"); 
+      setNewTodoCategory("Personal"); 
+      setNewTodoDueDate(undefined);
+      setIsAdding(false);
+    } catch (err) {
+      toast.error((err as Error).message);
     }
-    setTodos([newTodo, ...todos])
-    setNewTodoText(""); setNewTodoPriority("medium"); setNewTodoCategory("Personal"); setNewTodoDueDate(undefined);
-    setIsAdding(false)
   }
 
-  const toggleTodo = (id: string) => setTodos(todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo)))
-  const deleteTodo = (id: string) => setTodos(todos.filter((todo) => todo.id !== id))
+  const toggleTodo = async (id: string, completed: boolean) => {
+    try {
+        await apiClient.put(`/todos/${id}`, { completed });
+        toast.success(`Task ${completed ? 'completed' : 'reopened'}!`);
+        refetch();
+    } catch (err) {
+        toast.error((err as Error).message);
+    }
+  }
 
-  const filteredTodos = todos.filter((todo) => {
-    if (!showCompleted && todo.completed) return false
-    if (filterCategory !== "All" && todo.category !== filterCategory) return false
-    if (filterPriority !== "All" && todo.priority !== filterPriority.toLowerCase()) return false
-    return true
-  })
+  const deleteTodo = async (id: string) => {
+     if (!window.confirm("Are you sure you want to delete this todo?")) return;
+     try {
+        await apiClient.del(`/todos/${id}`);
+        toast.success("Todo deleted.");
+        refetch();
+     } catch (err) {
+        toast.error((err as Error).message);
+     }
+  }
 
-  const completedCount = todos.filter((todo) => todo.completed).length
-  const totalCount = todos.length
-  const progressPercentage = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
+  const filteredTodos = useMemo(() => {
+    return todos?.filter((todo) => {
+        if (!showCompleted && todo.completed) return false
+        if (filterCategory !== "All" && todo.category !== filterCategory) return false
+        if (filterPriority !== "All" && todo.priority !== filterPriority.toLowerCase()) return false
+        return true
+      }) || [];
+  }, [todos, showCompleted, filterCategory, filterPriority]);
+
+  const completedCount = todos?.filter((todo) => todo.completed).length || 0;
+  const totalCount = todos?.length || 0;
+  const progressPercentage = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+  
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high": return "bg-red-500";
@@ -88,15 +102,15 @@ export default function PersonalTodosPage() {
       case "low": return "bg-green-500";
       default: return "bg-gray-500";
     }
-  }
+  };
 
   return (
     <AppLayout>
       <div className="p-6 max-w-4xl mx-auto space-y-6">
         <div>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-jello-blue to-jello-blue-dark flex items-center justify-center">
-              <Icon as={CheckSquare} className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center">
+              <CheckSquare className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
               <h1 className="text-3xl font-bold text-foreground">Personal Todos</h1>
@@ -110,6 +124,34 @@ export default function PersonalTodosPage() {
             </div>
             <Progress value={progressPercentage} className="h-2" />
           </div>
+        </div>
+
+        <div className="glass-card p-4 rounded-2xl">
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-foreground">Category:</span>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-foreground">Priority:</span>
+                <Select value={filterPriority} onValueChange={setFilterPriority}>
+                  <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>{priorities.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox id="show-completed" checked={showCompleted} onCheckedChange={(checked) => setShowCompleted(Boolean(checked))} />
+                <Label htmlFor="show-completed" className="text-sm">Show completed</Label>
+              </div>
+              <div className="flex-grow flex justify-end">
+              <Button variant={isManaging ? "destructive" : "outline"} onClick={() => setIsManaging(!isManaging)}>
+                  {isManaging ? "Done" : "Manage"}
+                </Button>
+              </div>
+            </div>
         </div>
 
         <div className="glass-card p-4 rounded-2xl">
@@ -135,7 +177,7 @@ export default function PersonalTodosPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Due Date</Label>
-                      <DatePicker date={newTodoDueDate} onDateChange={setNewTodoDueDate} />
+                      <DatePicker date={newTodoDueDate} setDate={setNewTodoDueDate} />
                     </div>
                   </div>
                   <div className="flex justify-end gap-2 pt-2">
@@ -152,67 +194,46 @@ export default function PersonalTodosPage() {
           </AnimatePresence>
         </div>
 
-        <div className="glass-card p-4 rounded-2xl">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">Category:</span>
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-              </Select>
+        {isLoading ? (
+            <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">Priority:</span>
-              <Select value={filterPriority} onValueChange={setFilterPriority}>
-                <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                <SelectContent>{priorities.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox id="show-completed" checked={showCompleted} onCheckedChange={(checked) => setShowCompleted(Boolean(checked))} />
-              <Label htmlFor="show-completed" className="text-sm">Show completed</Label>
-            </div>
-            <div className="flex-grow flex justify-end">
-              <Button variant={isManaging ? "destructive" : "outline"} onClick={() => setIsManaging(!isManaging)}>
-                {isManaging ? "Done" : "Manage"}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <AnimatePresence>
-            {filteredTodos.map((todo) => (
-              <motion.div key={todo.id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }} className="glass-card p-4 rounded-2xl">
-                <div className="flex items-center gap-4">
-                  <Checkbox checked={todo.completed} onCheckedChange={() => toggleTodo(todo.id)} />
-                  <div className="flex-1">
-                    <p className={`text-base ${todo.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>{todo.text}</p>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
-                      <Badge variant="secondary">{todo.category}</Badge>
-                      <div className="flex items-center gap-1.5">
-                        <div className={`w-2 h-2 rounded-full ${getPriorityColor(todo.priority)}`} />
-                        <span className="capitalize">{todo.priority}</span>
+        ) : error ? (
+            <div className="text-center text-destructive"><AlertTriangle className="mx-auto mb-2" /> {error}</div>
+        ) : (
+          <div className="space-y-3">
+            <AnimatePresence>
+              {filteredTodos.map((todo) => (
+                <motion.div key={todo.id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }} className="glass-card p-4 rounded-2xl">
+                  <div className="flex items-center gap-4">
+                    <Checkbox checked={todo.completed} onCheckedChange={(checked) => toggleTodo(todo.id, !!checked)} />
+                    <div className="flex-1">
+                      <p className={`text-base ${todo.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>{todo.text}</p>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                        <Badge variant="secondary">{todo.category}</Badge>
+                        <div className="flex items-center gap-1.5">
+                          <div className={`w-2 h-2 rounded-full ${getPriorityColor(todo.priority)}`} />
+                          <span className="capitalize">{todo.priority}</span>
+                        </div>
+                        {todo.dueDate && (<span>Due: {new Date(todo.dueDate).toLocaleDateString()}</span>)}
                       </div>
-                      {todo.dueDate && (<span>Due: {todo.dueDate.toLocaleDateString()}</span>)}
                     </div>
+                    <AnimatePresence>
+                      {isManaging && (
+                        <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => deleteTodo(todo.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                  <AnimatePresence>
-                    {isManaging && (
-                      <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => deleteTodo(todo.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
     </AppLayout>
   )
 }
-

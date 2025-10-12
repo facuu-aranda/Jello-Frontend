@@ -1,109 +1,181 @@
+// components/modals/create-project-modal.tsx
 "use client"
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
-import { MemberSelector } from "@/components/forms/member-selector"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { ImageUploadField } from "@/components/forms/image-upload-field"
+import { ColorSelector } from "@/components/forms/color-selector"
+import { UserSummary } from "@/types"
+import { UserPlus, X } from "lucide-react"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { UserSearchModal } from "./UserSearchModal" // Importamos el nuevo modal
+
+// El tipo para el formulario que se envía
+interface ProjectFormData {
+  name: string;
+  description: string;
+  color: string;
+  members: string[]; // Guardaremos solo los IDs de los miembros a invitar
+  projectImage?: File;
+  bannerImage?: File;
+  dueDate?: string;
+}
 
 interface CreateProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: Partial<ProjectFormData>) => void;
 }
 
-const projectColors = [
-    { id: 'bg-accent-pink', class: 'bg-accent-pink', selectedClass: 'ring-accent-pink' },
-    { id: 'bg-accent-purple', class: 'bg-accent-purple', selectedClass: 'ring-accent-purple' },
-    { id: 'bg-accent-teal', class: 'bg-accent-teal', selectedClass: 'ring-accent-teal' },
-    { id: 'bg-primary', class: 'bg-primary', selectedClass: 'ring-primary' },
-];
+const initialFormData: Partial<ProjectFormData> = {
+  name: "",
+  description: "",
+  color: "bg-blue-500",
+  members: [],
+};
 
 export function CreateProjectModal({ isOpen, onClose, onSubmit }: CreateProjectModalProps) {
-  const [name, setName] = React.useState("")
-  const [description, setDescription] = React.useState("")
-  const [color, setColor] = React.useState(projectColors[0].id)
-  const [dueDate, setDueDate] = React.useState<Date | undefined>(undefined)
-  const [members, setMembers] = React.useState<string[]>([])
-  const [projectImage, setProjectImage] = React.useState<File | null>(null)
-  const [bannerImage, setBannerImage] = React.useState<File | null>(null)
+  const [formData, setFormData] = React.useState<Partial<ProjectFormData>>(initialFormData);
+  const [memberObjects, setMemberObjects] = React.useState<UserSummary[]>([]);
+  const [isUserSearchModalOpen, setIsUserSearchModalOpen] = React.useState(false);
 
-  const handleSubmit = () => {
-    onSubmit({ name, description, color, dueDate, members, projectImage, bannerImage });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectUsers = (selectedUsers: UserSummary[]) => {
+    // Evitar duplicados
+    const newUsers = selectedUsers.filter(
+      selected => !memberObjects.some(existing => existing.id === selected.id)
+    );
+
+    const newMemberObjects = [...memberObjects, ...newUsers];
+    const newMemberIds = newMemberObjects.map(m => m.id);
+
+    setMemberObjects(newMemberObjects);
+    setFormData(prev => ({ ...prev, members: newMemberIds }));
+    setIsUserSearchModalOpen(false);
+  }
+  
+  const handleRemoveMember = (memberId: string) => {
+    setMemberObjects(prev => prev.filter(m => m.id !== memberId));
+    setFormData(prev => ({...prev, members: prev.members?.filter(id => id !== memberId)}));
+  }
+
+  const resetAndClose = () => {
+    setFormData(initialFormData);
+    setMemberObjects([]);
     onClose();
   }
 
-  const FormContent = (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="name">Project Name</Label>
-        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Q4 Marketing Campaign" />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Add a short description..." />
-      </div>
-      <ImageUploadField label="Project Image" name="projectImage" onChange={setProjectImage} />
-      <ImageUploadField label="Project Banner" name="bannerImage" onChange={setBannerImage} />
-      <div className="space-y-2">
-        <Label>Project Color</Label>
-        <div className="flex gap-3">
-          {projectColors.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              className={cn("w-8 h-8 rounded-full transition-transform hover:scale-110", c.class, color === c.id && `ring-2 ${c.selectedClass} ring-offset-2 ring-offset-background`)}
-              onClick={() => setColor(c.id)}
-            />
-          ))}
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label>Due Date (Optional)</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !dueDate && "text-muted-foreground")}>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={dueDate} onSelect={setDueDate} initialFocus /></PopoverContent>
-        </Popover>
-      </div>
-      <div className="space-y-2">
-        <Label>Team Members</Label>
-        <MemberSelector selectedMembers={members} onSelectMembers={setMembers} />
-      </div>
-    </div>
-  );
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
+    resetAndClose();
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] flex flex-col p-0 glass-card">
-        <DialogHeader className="p-6 pb-4 border-b border-border/50 flex-shrink-0">
-          <DialogTitle>Create New Project</DialogTitle>
-          <DialogDescription>Fill in the details to start your new project.</DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={isOpen} onOpenChange={resetAndClose}>
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+            <DialogDescription>
+              Fill in the details below to start a new project.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="p-6">
-                {FormContent}
+          <form onSubmit={handleSubmit} id="create-project-form" className="flex-1 overflow-y-auto pr-2 -mr-6 pl-6">
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="name" className="text-sm font-medium">Project Name</label>
+                <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="description" className="text-sm font-medium">Description</label>
+                <Textarea id="description" name="description" value={formData.description} onChange={handleChange} />
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                    <label className="text-sm font-medium">Team Members</label>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setIsUserSearchModalOpen(true)}>
+                      <UserPlus className="w-4 h-4 mr-2" /> Add People
+                    </Button>
+                </div>
+                <div className="flex items-center flex-wrap gap-2 min-h-[40px]">
+                  {memberObjects.map((member) => (
+                    <div key={member.id} className="relative group">
+                      <Avatar title={member.name}>
+                        <AvatarImage src={member.avatarUrl ?? undefined} alt={member.name} />
+                        <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <button 
+                        type="button"
+                        onClick={() => handleRemoveMember(member.id)}
+                        className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label={`Remove ${member.name}`}
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {memberObjects.length === 0 && <p className="text-xs text-muted-foreground">No members added yet.</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <ImageUploadField 
+                        label="Project Image" 
+                        name="projectImage" 
+                        onChange={(file) => setFormData(prev => ({...prev, projectImage: file || undefined}))} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <ImageUploadField 
+                        label="Banner Image" 
+                        name="bannerImage" 
+                        onChange={(file) => setFormData(prev => ({...prev, bannerImage: file || undefined}))} 
+                    />
+                  </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Project Color</label>
+                <ColorSelector 
+                    selectedColor={formData.color || 'bg-blue-500'} 
+                    onSelectColor={(color: string) => setFormData(prev => ({ ...prev, color }))} 
+                />
+              </div>
             </div>
-        </div>
+          </form>
+          
+          <DialogFooter className="flex-shrink-0 pt-4">
+            <Button type="button" variant="ghost" onClick={resetAndClose}>Cancel</Button>
+            <Button type="submit" form="create-project-form">Create Project</Button>
+          </DialogFooter>
 
-        <DialogFooter className="p-4 border-t border-border/50 flex-shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit}>Create Project</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      
+      <UserSearchModal
+        isOpen={isUserSearchModalOpen}
+        onClose={() => setIsUserSearchModalOpen(false)}
+        onSelectUsers={handleSelectUsers}
+        excludedUserIds={formData.members}
+      />
+    </>
   )
 }

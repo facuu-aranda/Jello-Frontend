@@ -1,119 +1,211 @@
 "use client"
 
-import * as React from "react"
-import { AppLayout } from "@/components/layout/app-layout"
-import { KanbanBoard } from "@/components/kanban/kanban-board"
-import { TaskModal } from "@/components/tasks/task-modal"
-import { CreateTaskModal } from "@/components/modals/create-task-modal"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Settings, Users, Filter } from "lucide-react"
-import { ActivityItem } from "@/components/activity/ActivityItem"
+import * as React from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useApi } from '@/hooks/useApi'
+import { ProjectDetails, TaskSummary, TaskDetails } from '@/types'
+import { AppLayout } from '@/components/layout/app-layout'
+import { KanbanBoard } from '@/components/kanban/kanban-board'
+import { TaskModal } from '@/components/tasks/task-modal'
+import { CreateTaskModal } from '@/components/modals/create-task-modal'
+import { ProjectHeader } from '@/components/project-header'
+import { EditProjectModal } from '@/components/modals/edit-project-modal'
+import { AddMemberModal } from '@/components/modals/AddMemberModal'
+import { apiClient } from '@/lib/api'
+import { toast } from 'sonner'
+import { Skeleton } from '@/components/ui/skeleton'
+import type { DropResult } from '@hello-pangea/dnd';
+import { ActivityFeed } from '@/components/activity/ActivityFeed'
 
-const mockProject = {
-  id: "1",
-  name: "Website Redesign",
-  description: "Complete overhaul of the company website with modern design and improved UX",
-  members: [
-    { id: "1", name: "Sarah", avatar: "/sarah-avatar.png" },
-    { id: "2", name: "Mike", avatar: "/mike-avatar.jpg" },
-    { id: "3", name: "Alex", avatar: "/diverse-user-avatars.png" },
-    { id: "4", name: "Emma", avatar: "/diverse-user-avatars.png" },
-  ],
-  isOwner: true,
-}
+export default function ProjectPage() {
+  const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const projectId = params.projectId as string;
 
-const mockProjectActivities = [
-  { id: 1, type: "comment", user: { name: "Sarah", avatar: "/sarah-avatar.png" }, action: "commented on", target: "Update homepage design", time: "2 minutes ago", projectId: 1 },
-  { id: 4, type: "document", user: { name: "You", avatar: "/diverse-user-avatars.png" }, action: "uploaded", target: "API Documentation.pdf", time: "Yesterday", projectId: 1 },
-];
+  const { data: project, isLoading, error, refetch, setData: setProject } = useApi<ProjectDetails>(`/projects/${projectId}`);
+  
+  const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
+  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = React.useState(false);
+  const [defaultStatusForCreate, setDefaultStatusForCreate] = React.useState<'todo' | 'in-progress' | 'review' | 'done'>('todo');
 
-export default function ProjectPage({ params }: { params: { projectId: string } }) {
-  const [selectedTask, setSelectedTask] = React.useState<any | null>(null)
-  const [modalMode, setModalMode] = React.useState<"view" | "edit">("view");
-  const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = React.useState(false)
-  const [selectedColumnId, setSelectedColumnId] = React.useState<string | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = React.useState(false);
 
-  const handleTaskView = (task: any) => {
-    setModalMode("view");
-    setSelectedTask(task);
+  const handleTaskStatusChange = async (result: DropResult) => {
+    if (!project) return;
+    
+    const { source, destination, draggableId } = result;
+    if (!destination) return;
+
+    const originalProject = { ...project };
+
+    const sourceColumnId = source.droppableId as keyof ProjectDetails['tasksByStatus'];
+    const destColumnId = destination.droppableId as keyof ProjectDetails['tasksByStatus'];
+
+    const sourceTasks = [...originalProject.tasksByStatus[sourceColumnId]];
+    const destTasks = source.droppableId === destination.droppableId ? sourceTasks : [...originalProject.tasksByStatus[destColumnId]];
+    
+    const [movedTask] = sourceTasks.splice(source.index, 1);
+    
+    if (!movedTask) return;
+
+    movedTask.status = destColumnId;
+    destTasks.splice(destination.index, 0, movedTask);
+
+    const newProjectState = {
+        ...originalProject,
+        tasksByStatus: {
+            ...originalProject.tasksByStatus,
+            [sourceColumnId]: sourceTasks,
+            [destColumnId]: destTasks,
+        }
+    };
+    
+    setProject(newProjectState);
+
+    try {
+      await apiClient.put(`/projects/${projectId}/tasks/${draggableId}`, { status: destColumnId });
+    } catch (err) {
+        toast.error("Failed to update task status. Reverting changes.");
+        setProject(originalProject);
+    }
+   };
+  
+ const handleTaskClick = async (taskSummary: TaskSummary) => {
+    try {
+      toast.info("Loading task details...");
+      const detailedTask = await apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`);
+      setSelectedTask(detailedTask);
+      setIsTaskModalOpen(true);
+      toast.dismiss();
+    } catch (err) {
+      toast.error("Failed to load task details.");
+    }
+  }
+  
+  const handleOpenCreateTaskModal = (columnId: string) => {
+    setDefaultStatusForCreate(columnId as 'todo' | 'in-progress' | 'review' | 'done');
+    setIsCreateTaskModalOpen(true);
   }
 
-  const handleTaskEdit = (task: any) => {
-    setModalMode("edit");
-    setSelectedTask(task);
+
+  React.useEffect(() => {
+    const taskIdFromUrl = searchParams.get('taskId');
+    if (taskIdFromUrl && project) {
+      // Buscamos la tarea en los datos del proyecto para evitar una llamada extra si ya la tenemos
+      const taskSummary = Object.values(project.tasksByStatus).flat().find(t => t.id === taskIdFromUrl);
+      if (taskSummary) {
+        handleTaskClick(taskSummary);
+        // Opcional: limpiar el parámetro de la URL para que no se vuelva a abrir al recargar
+        router.replace(`/project/${projectId}`, { scroll: false });
+      }
+    }
+  }, [searchParams, project, router, projectId]);
+
+   const handleCreateTask = async (formData: FormData) => {
+    setIsCreateTaskModalOpen(false);
+    toast.info("Creating new task...");
+
+    try {
+      const newTask = await apiClient.post<TaskSummary>(`/projects/${projectId}/tasks`, formData);
+      
+      toast.success(`Task "${newTask.title}" created!`);
+
+      // Refresca toda la data del proyecto para que la UI esté 100% sincronizada.
+      refetch();
+
+    } catch (err) {
+      toast.error(`Failed to create task: ${(err as Error).message}`);
+    }
+  };
+
+  // --- FIN DE LA CORRECCIÓN ---
+
+
+  const handleEditProject = async (formData: FormData) => {
+    if (!project) return;
+    toast.info("Saving changes...");
+    try {
+      await apiClient.put(
+        `/projects/${project.id}`,
+        formData
+      );
+      
+      await refetch();
+      
+      toast.success("Project updated successfully!");
+      setIsEditModalOpen(false);
+
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
+  }
+  
+  const handleDeleteProject = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
+    toast.info("Deleting project...");
+    try {
+      await apiClient.del(`/projects/${id}`);
+      toast.success("Project deleted.");
+      router.push('/projects');
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
   }
 
-  const handleAddTask = (columnId: string) => {
-    setSelectedColumnId(columnId)
-    setIsCreateTaskModalOpen(true)
+  if (isLoading) {
+    return (
+        <AppLayout>
+            <div className="p-8 space-y-6">
+                <Skeleton className="h-12 w-1/3" />
+                <Skeleton className="h-8 w-2/3" />
+                <div className="flex gap-6 h-[calc(100vh-200px)]">
+                    <Skeleton className="w-96 h-full" />
+                    <Skeleton className="w-96 h-full" />
+                    <Skeleton className="w-96 h-full" />
+                </div>
+            </div>
+        </AppLayout>
+    )
   }
 
-  const handleCreateTask = (taskData: any) => { console.log("Creating task:", taskData) }
-  const handleUpdateTask = (taskData: any) => { console.log("Updating task:", taskData) }
-  const handleDeleteTask = (taskId: string) => { console.log("Deleting task:", taskId) }
+  if (error) {
+    return <AppLayout><div>Error loading project.</div></AppLayout>
+  }
+
+  if (!project) {
+    return <AppLayout><div>Project not found.</div></AppLayout>
+  }
 
   return (
-    <AppLayout>
-      <div className="flex flex-col h-full space-y-6">
-        <div className="flex-shrink-0 glass-card p-6 rounded-2xl">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-foreground">{mockProject.name}</h1>
-                {mockProject.isOwner && (
-                  <Badge variant="secondary" className="text-xs">Owner</Badge>
-                )}
-              </div>
-              <p className="text-muted-foreground">{mockProject.description}</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="flex -space-x-2">
-                  {mockProject.members.slice(0, 4).map((member) => (
-                    <Avatar key={member.id} className="w-8 h-8 border-2 border-background">
-                      <AvatarImage src={member.avatar} alt={member.name} />
-                      <AvatarFallback className="text-xs">{member.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                  ))}
-                </div>
-                <Button variant="ghost" size="sm"><Users className="w-4 h-4 mr-2" />Invite</Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm"><Filter className="w-4 h-4 mr-2" />Filter</Button>
-                <Button variant="outline" size="sm"><Settings className="w-4 h-4 mr-2" />Settings</Button>
-              </div>
-            </div>
+    <>
+      <AppLayout>
+        <div className="space-y-6">
+          <ProjectHeader 
+            project={project!} 
+            onEdit={() => setIsEditModalOpen(true)}
+            onInviteMembers={() => setIsInviteModalOpen(true)}
+          />
+          <div className="min-h-[65vh]">
+            <KanbanBoard
+              project={project!}
+              onTaskStatusChange={handleTaskStatusChange}
+              onTaskClick={handleTaskClick}
+              onAddTask={handleOpenCreateTaskModal}
+            />
+          </div>
+          <div className="border-t border-border p-6">
+            <ActivityFeed projectId={projectId} />
           </div>
         </div>
-        <div className="flex-1 overflow-hidden">
-          <KanbanBoard onTaskView={handleTaskView} onTaskEdit={handleTaskEdit} onAddTask={handleAddTask} />
-        </div>
-        <div className="flex-shrink-0 px-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
-          <div className="glass-card p-4 rounded-2xl space-y-2">
-            {mockProjectActivities.map((activity, index) => (
-              <ActivityItem key={activity.id} activity={activity} index={index} />
-            ))}
-          </div>
-        </div>
-        <TaskModal
-          isOpen={!!selectedTask}
-          onClose={() => setSelectedTask(null)}
-          task={selectedTask}
-          mode={modalMode}
-          onSubmit={handleUpdateTask}
-          onDelete={handleDeleteTask}
-        />
-        <CreateTaskModal
-          isOpen={isCreateTaskModalOpen}
-          onClose={() => setIsCreateTaskModalOpen(false)}
-          onSubmit={handleCreateTask}
-          columnId={selectedColumnId || undefined}
-          projectId={params.projectId}
-        />
-      </div>
-    </AppLayout>
+      </AppLayout>
+
+      {selectedTask && ( <TaskModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} task={selectedTask} onDataChange={refetch} /> )}
+      <CreateTaskModal isOpen={isCreateTaskModalOpen} onClose={() => setIsCreateTaskModalOpen(false)} onSubmit={handleCreateTask} defaultStatus={defaultStatusForCreate} projectId={projectId} />
+      {project && <EditProjectModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} onSubmit={handleEditProject} onDelete={handleDeleteProject} project={project} onDataChange={refetch} />}
+      {project && <AddMemberModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} projectId={project.id} onInviteSent={refetch} currentMembers={project.members.map(m => m.id)} />}
+    </>
   )
 }

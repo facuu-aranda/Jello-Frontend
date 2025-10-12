@@ -7,54 +7,58 @@ import { AppLayout } from "@/components/layout/app-layout"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Search, ArrowRight } from "lucide-react"
+import { Search, ArrowRight, AlertTriangle } from "lucide-react"
 import { TaskModal } from "@/components/tasks/task-modal"
 import { cn } from "@/lib/utils"
+import { TaskDetails, TaskSummary } from "@/types"
+import { useApi } from "@/hooks/useApi"
+import { apiClient } from "@/lib/api"
+import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
 
-// CORRECCIÓN: Tipos alineados con los componentes hijos
-interface LabelData { id: string; name: string; color: string; }
-interface SubtaskData { id: string; text: string; completed: boolean; }
-interface Task {
-    id: string; title: string; description?: string;
-    status: "todo" | "in-progress" | "review" | "done";
-    priority: "low" | "medium" | "high" | "critical";
-    project: string; projectId: string; dueDate?: string;
-    subtasks: SubtaskData[];
-    comments: any[]; attachments: any[]; labels: LabelData[];
-}
-
-const mockTasks: Task[] = [
-    { id: "1", title: "Design new user onboarding flow", description: "Create wireframes and mockups for the improved user onboarding experience", status: "in-progress", priority: "high", project: "Mobile App Redesign", projectId: "2", dueDate: "2025-01-14", subtasks: [{id: 's1', text: 'Define steps', completed: true}], comments: [], attachments: [], labels: [{id: "1", name: "Design", color: "#ec4899"}, {id: "2", name: "UX", color: "#8b5cf6"}] },
-    { id: "2", title: "Implement authentication system", description: "Set up JWT-based authentication with refresh tokens", status: "todo", priority: "high", project: "Backend API", projectId: "4", dueDate: "2025-01-17", subtasks: [], comments: [], attachments: [], labels: [{id: "3", name: "Backend", color: "#14b8a6"}, {id: "4", name: "Security", color: "#ef4444"}] },
-    { id: "3", title: "Write unit tests for user service", description: "Comprehensive test coverage for all user-related operations", status: "review", priority: "medium", project: "Backend API", projectId: "4", dueDate: "2025-02-01", subtasks: [], comments: [], attachments: [], labels: [{id: "5", name: "Testing", color: "#f59e0b"}, {id: "3", name: "Backend", color: "#14b8a6"}] },
-    { id: "4", title: "Update documentation", description: "Update API documentation with new endpoints", status: "done", priority: "low", project: "Documentation", projectId: "3", dueDate: "2025-02-10", subtasks: [], comments: [], attachments: [], labels: [{id: "6", name: "Docs", color: "#6b7280"}] },
-];
-
-const statusConfig = {
-    "all": { color: "bg-gray-500", label: "All Tasks" }, "todo": { color: "bg-gray-500", label: "To Do" },
-    "in-progress": { color: "bg-blue-500", label: "In Progress" }, "review": { color: "bg-yellow-500", label: "Review" },
+const statusConfig: { [key: string]: { color: string; label: string } } = {
+    "all": { color: "bg-gray-500", label: "All Tasks" },
+    "todo": { color: "bg-gray-500", label: "To Do" },
+    "in-progress": { color: "bg-blue-500", label: "In Progress" },
+    "review": { color: "bg-yellow-500", label: "Review" },
     "done": { color: "bg-green-500", label: "Done" },
 };
 
 export default function MyTasksPage() {
-    const [tasks] = React.useState(mockTasks);
+    // --- MODIFICADO: Estado para filtros y datos de la API ---
     const [searchQuery, setSearchQuery] = React.useState("");
     const [statusFilter, setStatusFilter] = React.useState<keyof typeof statusConfig>("all");
-    const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
+    const { data: tasks, isLoading, error, refetch } = useApi<TaskSummary[]>(`/tasks/my-tasks`);
+    const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
 
-    const filteredTasks = tasks.filter((task) => {
-        const matchesStatus = statusFilter === "all" || task.status === statusFilter;
-        const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesStatus && matchesSearch;
-    });
+    // --- MODIFICADO: Lógica de filtrado en el frontend ---
+    const filteredTasks = React.useMemo(() => {
+        return tasks?.filter((task) => {
+            const matchesStatus = statusFilter === "all" || task.status === statusFilter;
+            const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesStatus && matchesSearch;
+        }) || [];
+    }, [tasks, statusFilter, searchQuery]);
 
-    const tasksByStatus = {
-        todo: tasks.filter((t) => t.status === "todo").length,
-        "in-progress": tasks.filter((t) => t.status === "in-progress").length,
-        review: tasks.filter((t) => t.status === "review").length,
-        done: tasks.filter((t) => t.status === "done").length,
+    const tasksByStatus = React.useMemo(() => ({
+        todo: tasks?.filter((t) => t.status === "todo").length || 0,
+        "in-progress": tasks?.filter((t) => t.status === "in-progress").length || 0,
+        review: tasks?.filter((t) => t.status === "review").length || 0,
+        done: tasks?.filter((t) => t.status === "done").length || 0,
+    }), [tasks]);
+
+    // --- NUEVO: Función para abrir el modal con detalles de la tarea ---
+    const handleTaskView = async (taskSummary: TaskSummary) => {
+        try {
+            toast.info("Loading task details...");
+            const taskDetails = await apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`);
+            setSelectedTask(taskDetails);
+            toast.dismiss();
+        } catch (err) {
+            toast.error("Failed to load task details.");
+        }
     };
-
+    
     const StatCard = ({ status, count }: { status: keyof typeof tasksByStatus | 'all'; count: number }) => {
         const config = statusConfig[status];
         return (
@@ -82,7 +86,7 @@ export default function MyTasksPage() {
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <StatCard status="all" count={tasks.length} />
+                        <StatCard status="all" count={tasks?.length || 0} />
                         <StatCard status="todo" count={tasksByStatus.todo} />
                         <StatCard status="in-progress" count={tasksByStatus["in-progress"]} />
                         <StatCard status="review" count={tasksByStatus.review} />
@@ -93,39 +97,48 @@ export default function MyTasksPage() {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <Input placeholder="Search tasks..." className="pl-12 h-11" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </div>
-
-                    <div className="space-y-4">
-                        {filteredTasks.map((task, index) => (
-                            <motion.div
-                                key={task.id}
-                                className="glass-card p-4 rounded-2xl hover:shadow-lg transition-all duration-200 cursor-pointer"
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                onClick={() => setSelectedTask(task)}
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-1.5 h-16 rounded-full ${statusConfig[task.status].color}`} />
-                                    <div className="flex-1">
-                                        <p className="font-semibold text-foreground">{task.title}</p>
-                                        <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                                            <span>{task.project}</span>
-                                            <span>•</span>
-                                            <span>Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</span>
+                    
+                    {/* --- MODIFICADO: Manejo de estados de carga y error --- */}
+                    {isLoading ? (
+                        <div className="space-y-4">
+                            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}
+                        </div>
+                    ) : error ? (
+                        <div className="text-center text-destructive"><AlertTriangle className="mx-auto mb-2" /> {error}</div>
+                    ) : (
+                        <div className="space-y-4">
+                            {filteredTasks.map((task, index) => (
+                                <motion.div
+                                    key={task.id}
+                                    className="glass-card p-4 rounded-2xl hover:shadow-lg transition-all duration-200 cursor-pointer"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    onClick={() => handleTaskView(task)}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-1.5 h-16 rounded-full ${statusConfig[task.status].color}`} />
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-foreground">{task.title}</p>
+                                            <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
+                                                <span>{task.projectId}</span>
+                                                <span>•</span>
+                                                <span>Due: {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <div className="flex gap-1">
+                                                {task.labels.map(label => <Badge key={label._id} variant="secondary" style={{ backgroundColor: label.color + '20', color: label.color }}>{label.name}</Badge>)}
+                                            </div>
+                                            <Button asChild variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                                                <Link href={`/project/${task.projectId}`}>Go to project <ArrowRight className="w-3 h-3 ml-2" /></Link>
+                                            </Button>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-2">
-                                        <div className="flex gap-1">
-                                            {task.labels.map(label => <Badge key={label.id} variant="secondary" style={{ backgroundColor: label.color + '20', color: label.color }}>{label.name}</Badge>)}
-                                        </div>
-                                        <Button asChild variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
-                                            <Link href={`/project/${task.projectId}`}>Go to project <ArrowRight className="w-3 h-3 ml-2" /></Link>
-                                        </Button>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </AppLayout>
 
@@ -133,9 +146,9 @@ export default function MyTasksPage() {
                 isOpen={!!selectedTask}
                 onClose={() => setSelectedTask(null)}
                 task={selectedTask}
+                onDataChange={refetch}
                 showGoToProjectButton={true}
             />
         </>
     )
 }
-

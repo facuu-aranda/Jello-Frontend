@@ -5,35 +5,27 @@ import { Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-
-interface Subtask {
-  id: string
-  text: string
-  completed: boolean
-}
+import { Subtask } from "@/types"
 
 interface SubtaskListProps {
   subtasks: Subtask[];
   isEditing: boolean;
-  onSubtaskToggle: (id: string) => void;
+  onSubtaskToggle: (id: string, completed: boolean) => void;
   onSubtaskAdd: (text: string) => void;
   onSubtaskDelete: (id: string) => void;
 }
 
 export function SubtaskList({ subtasks, isEditing, onSubtaskToggle, onSubtaskAdd, onSubtaskDelete }: SubtaskListProps) {
-  const [newSubtask, setNewSubtask] = React.useState("")
-  const [isAdding, setIsAdding] = React.useState(false)
+  const [newSubtaskText, setNewSubtaskText] = React.useState("")
 
   const handleAdd = () => {
-    if (newSubtask.trim()) {
-      onSubtaskAdd(newSubtask.trim())
-      setNewSubtask("")
-      setIsAdding(false)
+    if (newSubtaskText.trim()) {
+      onSubtaskAdd(newSubtaskText.trim())
+      setNewSubtaskText("")
     }
   }
 
-  const subtaskList = Array.isArray(subtasks) ? subtasks : [];
-  const completedCount = subtaskList.filter((subtask) => subtask.completed).length
+  const completedCount = subtasks.filter((subtask) => subtask.completed).length
 
   return (
     <div className="space-y-4">
@@ -41,28 +33,28 @@ export function SubtaskList({ subtasks, isEditing, onSubtaskToggle, onSubtaskAdd
         <div className="space-y-1">
           <h4 className="font-medium text-foreground">Subtasks</h4>
           <p className="text-sm text-muted-foreground">
-            {completedCount} of {subtaskList.length} completed
+            {completedCount} of {subtasks.length} completed
           </p>
         </div>
         {isEditing && (
-          <Button variant="ghost" size="sm" onClick={() => setIsAdding(true)}>
+          <Button variant="ghost" size="sm" onClick={handleAdd}>
             <Plus className="w-4 h-4" />
           </Button>
         )}
       </div>
 
-      {subtaskList.length > 0 && (
+      {subtasks.length > 0 && (
         <div className="w-full bg-muted rounded-full h-2">
           <motion.div
             className="h-2 bg-primary rounded-full"
-            animate={{ width: `${(completedCount / subtaskList.length) * 100}%` }}
+            animate={{ width: `${(completedCount / subtasks.length) * 100}%` }}
           />
         </div>
       )}
 
       <div className="space-y-2">
         <AnimatePresence>
-          {subtaskList.map((subtask) => (
+          {subtasks.map((subtask) => (
             <motion.div
               key={subtask.id}
               layout
@@ -71,7 +63,7 @@ export function SubtaskList({ subtasks, isEditing, onSubtaskToggle, onSubtaskAdd
               exit={{ opacity: 0, x: -20 }}
               className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors group"
             >
-              <Checkbox id={`subtask-${subtask.id}`} checked={subtask.completed} onCheckedChange={() => onSubtaskToggle(subtask.id)} disabled={!isEditing} />
+              <Checkbox id={`subtask-${subtask.id}`} checked={subtask.completed} onCheckedChange={(checked) => onSubtaskToggle(subtask.id, Boolean(checked))} disabled={!isEditing} />
               <label htmlFor={`subtask-${subtask.id}`} className={`flex-1 text-sm ${subtask.completed ? "line-through text-muted-foreground" : "text-foreground"} ${isEditing ? 'cursor-pointer' : ''}`}>
                 {subtask.text}
               </label>
@@ -89,9 +81,9 @@ export function SubtaskList({ subtasks, isEditing, onSubtaskToggle, onSubtaskAdd
           ))}
         </AnimatePresence>
 
-        {isEditing && isAdding && (
+        {isEditing && (
           <motion.div className="flex items-center gap-2" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <Input placeholder="Add a subtask..." value={newSubtask} onChange={(e) => setNewSubtask(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAdd() }} className="flex-1" autoFocus />
+            <Input placeholder="Add a subtask..." value={newSubtaskText} onChange={(e) => setNewSubtaskText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleAdd() }} className="flex-1" autoFocus />
             <Button size="sm" onClick={handleAdd}>Add</Button>
           </motion.div>
         )}

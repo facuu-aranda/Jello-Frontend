@@ -1,63 +1,105 @@
+// Jello-Frontend/components/tasks/AttachmentList.tsx
 "use client"
-import * as React from "react"
-import { motion } from "framer-motion"
-import { Upload, File, Image, Download, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 
-interface Attachment {
-  id: string; name: string; size: string; type: "image" | "document" | "other"; url: string;
-}
+import * as React from 'react'
+import { Attachment } from "@/types"
+import { Button } from '@/components/ui/button'
+import { Paperclip, FileText, Image as ImageIcon, Trash2, Download } from 'lucide-react'
+import Image from 'next/image'
+
 interface AttachmentListProps {
-  attachments: Attachment[]; isEditing: boolean;
-  onAttachmentAdd?: (files: FileList) => void; onAttachmentDelete?: (id: string) => void;
+  attachments: Attachment[]
+  isEditing: boolean
+  taskId: string
+  onAttachmentAdd: (files: FileList) => void
+  onAttachmentDelete: (id: string) => void
+  onAttachmentView?: (id: string) => void
 }
-const mockAttachments: Attachment[] = [
-  { id: "1", name: "homepage-wireframe.png", size: "2.4 MB", type: "image", url: "/placeholder.svg" },
-  { id: "2", name: "requirements.pdf", size: "1.8 MB", type: "document", url: "/placeholder.svg" },
-]
 
-export function AttachmentList({ attachments = mockAttachments, isEditing, onAttachmentAdd, onAttachmentDelete }: AttachmentListProps) {
+export function AttachmentList({
+  attachments,
+  isEditing,
+  onAttachmentAdd,
+  onAttachmentDelete,
+  onAttachmentView
+}: AttachmentListProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files) { onAttachmentAdd?.(e.target.files) } }
-  const getFileIcon = (type: Attachment["type"]) => type === "image" ? Image : File;
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      onAttachmentAdd(e.target.files)
+      e.target.value = '' // Reset input
+    }
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="font-medium text-foreground">Attachments</h4>
+        <h4 className="font-medium text-foreground flex items-center gap-2">
+          <Paperclip className="w-4 h-4" />
+          Attachments
+        </h4>
         {isEditing && (
-          <Button variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
-            <Upload className="w-4 h-4 mr-2" />Upload
+          <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+            Add
           </Button>
         )}
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          multiple
+          onChange={handleFileSelect}
+        />
       </div>
-      <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFileSelect} />
+
       <div className="space-y-2">
-        {attachments.map((attachment, index) => {
-          const FileIcon = getFileIcon(attachment.type)
-          return (
-            <motion.div key={attachment.id} className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors group" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.1 }}>
-              <div className="w-8 h-8 rounded bg-muted flex items-center justify-center"><FileIcon className="w-4 h-4 text-muted-foreground" /></div>
-              <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium text-foreground">{attachment.name}</p>
-                <p className="text-xs text-muted-foreground">{attachment.size}</p>
+        {attachments.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No attachments yet.</p>
+        ) : (
+          attachments.map(att => (
+            <div key={att._id} className="flex items-center gap-3 p-2 bg-muted rounded-lg group">
+              {att.type === 'image' ? (
+                // Si es una imagen, mostramos una miniatura
+                <div 
+                  className="relative w-12 h-12 flex-shrink-0 bg-background rounded-md overflow-hidden cursor-pointer"
+                  onClick={() => onAttachmentView?.(att._id)}
+                >
+                  <Image src={att.url} alt={att.name} layout="fill" objectFit="cover" />
+                </div>
+              ) : (
+                // Si es otro tipo de archivo, mostramos un ícono
+                <div className="w-12 h-12 flex-shrink-0 bg-background rounded-md flex items-center justify-center">
+                  <FileText className="w-6 h-6 text-muted-foreground" />
+                </div>
+              )}
+              
+              <div className="flex-1 overflow-hidden">
+                <p className="text-sm font-medium truncate">{att.name}</p>
+                <span className="text-xs text-muted-foreground">{att.size}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="w-8 h-8"><Download className="w-4 h-4" /></Button>
-                {isEditing && (
-                  <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive" onClick={() => onAttachmentDelete?.(attachment.id)}><Trash2 className="w-4 h-4" /></Button>
-                )}
-              </div>
-            </motion.div>
-          )
-        })}
+              
+              {/* Botón de descarga siempre visible */}
+              <Button asChild variant="ghost" size="icon" className="h-8 w-8">
+                <a href={att.url} target="_blank" rel="noopener noreferrer" download>
+                  <Download className="w-4 h-4" />
+                </a>
+              </Button>
+
+              {isEditing && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => onAttachmentDelete(att._id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+          ))
+        )}
       </div>
-      {isEditing && (
-        <motion.div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-          <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Drop files here or <span className="text-primary">browse</span></p>
-        </motion.div>
-      )}
     </div>
   )
 }

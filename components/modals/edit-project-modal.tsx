@@ -2,123 +2,242 @@
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Trash2 } from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "@/lib/utils"
-import { MemberSelector } from "@/components/forms/member-selector"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { ProjectSummary, UserSummary, Label as LabelType } from "@/types"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { ColorSelector } from "@/components/forms/color-selector"
 import { ImageUploadField } from "@/components/forms/image-upload-field"
+import { UserSearchModal } from "./UserSearchModal" 
+import { UserPlus } from "lucide-react"
+import { LabelManager } from "@/components/forms/label-manager"
+import { apiClient } from "@/lib/api"
+import { toast } from "sonner"
 
-interface ProjectData {
-  id: string; name: string; description: string; color: string;
-  dueDate?: string; members: string[]; projectImageUrl?: string; bannerImageUrl?: string; isOwner: boolean;
+interface ProjectFormData {
+  name: string;
+  description: string;
+  color: string;
+  projectImage?: File;
+  bannerImage?: File;
+  dueDate?: string;
 }
+
 interface EditProjectModalProps {
-  isOpen: boolean; onClose: () => void;
-  onSubmit: (data: any) => void; onDelete: (id: string) => void;
-  project: ProjectData | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: FormData) => void;
+  onDelete: (id: string) => void;
+  project: ProjectSummary;
+  onDataChange: () => void; 
 }
-const projectColors = [
-    { id: 'bg-accent-pink', class: 'bg-accent-pink', selectedClass: 'ring-accent-pink' },
-    { id: 'bg-accent-purple', class: 'bg-accent-purple', selectedClass: 'ring-accent-purple' },
-    { id: 'bg-accent-teal', class: 'bg-accent-teal', selectedClass: 'ring-accent-teal' },
-    { id: 'bg-primary', class: 'bg-primary', selectedClass: 'ring-primary' },
-];
 
-export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project }: EditProjectModalProps) {
-  const [formData, setFormData] = React.useState<ProjectData | null>(project);
+const COLORS = ["#ef4444", "#f97316", "#eab308", "#84cc16", "#22c55e", "#14b8a6", "#06b6d4", "#3b82f6", "#8b5cf6", "#d946ef", "#ec4899"];
+const getRandomColor = () => COLORS[Math.floor(Math.random() * COLORS.length)];
+
+export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project, onDataChange }: EditProjectModalProps) {
+  const [formData, setFormData] = React.useState<ProjectFormData>({ name: '', description: '', color: '' });
+  const [isUserSearchModalOpen, setIsUserSearchModalOpen] = React.useState(false);
+  const [currentMembers, setCurrentMembers] = React.useState<UserSummary[]>([]);
+
+const [projectLabels, setProjectLabels] = React.useState<LabelType[]>([]);
+const [labelsToAdd, setLabelsToAdd] = React.useState<string[]>([]);
+const [labelsToDelete, setLabelsToDelete] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    if (project) {
-      setFormData(project);
+    if (project && isOpen) {
+      setFormData({
+        name: project.name,
+        description: project.description,
+        color: project.color,
+        dueDate: project.dueDate || undefined,
+      });
+      setCurrentMembers(project.members);
+      
+      apiClient.get<LabelType[]>(`/projects/${project.id}/labels`)
+            .then(setProjectLabels)
+            .catch(() => toast.error("Could not load project labels."));
+    } else {
+      setProjectLabels([]);
+      setLabelsToAdd([]);
+      setLabelsToDelete([]);
     }
-  }, [project]);
+  }, [project, isOpen]);
 
-  if (!formData) return null;
-
-  const handleChange = (field: string, value: any) => {
-    setFormData(prev => prev ? { ...prev, [field]: value } : null);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
-    if (formData) {
-      onSubmit(formData);
-      onClose();
+  
+const handleLabelAdd = (name: string) => {
+    if (projectLabels.some(l => l.name.toLowerCase() === name.toLowerCase())) {
+      toast.error("A label with that name already exists.");
+      return;
     }
+    setLabelsToAdd(prev => [...prev, name]);
+    setProjectLabels(prev => [...prev, { _id: `temp-${name}`, name, color: getRandomColor() }]);
+};
+
+const handleLabelDelete = (id: string) => {
+    const labelToRemove = projectLabels.find(l => l._id === id);
+    if (!labelToRemove) return;
+
+    if (!id.startsWith('temp-')) {
+      setLabelsToDelete(prev => [...prev, id]);
+    }
+    setLabelsToAdd(prev => prev.filter(name => name !== labelToRemove.name));
+    setProjectLabels(prev => prev.filter(l => l._id !== id));
+};
+  
+  const handleSaveChanges = async (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.info("Saving project changes...");
+
+    if (labelsToAdd.length > 0 || labelsToDelete.length > 0) {
+      try {
+        await apiClient.put(`/projects/${project.id}/labels/batch`, {
+          add: labelsToAdd.map(name => ({ name, color: getRandomColor() })),
+          delete: labelsToDelete,
+        });
+        setLabelsToAdd([]);
+        setLabelsToDelete([]);
+      } catch (err) {
+        toast.error(`Failed to update labels: ${(err as Error).message}`);
+        return; 
+      }
+    }
+
+    const data = new FormData();
+    data.append('name', formData.name);
+    data.append('description', formData.description);
+    data.append('color', formData.color);
+    if (formData.projectImage) data.append('projectImage', formData.projectImage);
+    if (formData.bannerImage) data.append('bannerImage', formData.bannerImage);
+    
+    onSubmit(data);
   };
   
-  const handleDelete = () => {
-    if (formData) {
-      onDelete(formData.id);
-      onClose();
+  const handleInviteUsers = async (selectedUsers: UserSummary[]) => {
+    setIsUserSearchModalOpen(false);
+    if (selectedUsers.length === 0) return;
+
+    toast.info(`Inviting ${selectedUsers.length} member(s)...`);
+    
+    const invitePromises = selectedUsers.map(user => 
+      apiClient.post(`/projects/${project.id}/invitations`, { userIdToInvite: user.id })
+    );
+
+    try {
+      await Promise.all(invitePromises);
+      toast.success("Invitations sent successfully!");
+      onDataChange();
+    } catch (error) {
+      toast.error(`Failed to send invitations: ${(error as Error).message}`);
     }
-  };
+  }
+
+  if (!project) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-lg max-h-[90vh] flex flex-col p-0 glass-card">
-        <DialogHeader className="p-6 pb-4 border-b border-border/50 flex-shrink-0">
-          <div className="flex justify-between items-center">
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[525px] max-h-[90vh] flex flex-col">
+          <DialogHeader>
             <DialogTitle>Edit Project</DialogTitle>
-            {formData.isOwner && (
-                <Button variant="ghost" size="icon" onClick={handleDelete} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                    <Trash2 className="w-4 h-4" />
-                </Button>
-            )}
-          </div>
-        </DialogHeader>
-        <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="p-6 space-y-4">
+            <DialogDescription>
+              Make changes to your project here. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto pr-2 -mr-6 pl-6">
+            <form id="edit-project-form" onSubmit={handleSaveChanges} className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Project Name</Label>
-                <Input id="name" value={formData.name} onChange={(e) => handleChange('name', e.target.value)} />
+                <label className="text-sm font-medium">Project Name</label>
+                <Input name="name" value={formData.name} onChange={handleChange} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" value={formData.description} onChange={(e) => handleChange('description', e.target.value)} />
+                <label className="text-sm font-medium">Description</label>
+                <Textarea name="description" value={formData.description} onChange={handleChange} />
               </div>
-              <ImageUploadField label="Project Image" name="projectImage" onChange={(file) => handleChange('projectImageFile', file)} currentImageUrl={formData.projectImageUrl} />
-              <ImageUploadField label="Project Banner" name="bannerImage" onChange={(file) => handleChange('bannerImageFile', file)} currentImageUrl={formData.bannerImageUrl} />
               <div className="space-y-2">
-                <Label>Project Color</Label>
-                <div className="flex gap-3">
-                  {projectColors.map((c) => (
-                    <button
-                      key={c.id} type="button"
-                      className={cn("w-8 h-8 rounded-full transition-transform hover:scale-110", c.class, formData.color === c.id && `ring-2 ${c.selectedClass} ring-offset-2 ring-offset-background`)}
-                      onClick={() => handleChange('color', c.id)}
-                    />
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium">Team Members</label>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setIsUserSearchModalOpen(true)}>
+                    <UserPlus className="w-4 h-4 mr-2" /> Invite
+                  </Button>
+                </div>
+                <div className="flex items-center flex-wrap gap-2">
+                  {currentMembers.map((member: UserSummary) => (
+                    <Avatar key={member.id} title={member.name}>
+                      <AvatarImage src={member.avatarUrl ?? undefined} alt={member.name} />
+                      <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
                   ))}
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Due Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !formData.dueDate && "text-muted-foreground")}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.dueDate ? format(new Date(formData.dueDate), "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={formData.dueDate ? new Date(formData.dueDate) : undefined} onSelect={(date) => handleChange('dueDate', date?.toISOString())} initialFocus /></PopoverContent>
-                </Popover>
+
+<div className="space-y-2">
+    <label className="text-sm font-medium">Project Labels</label>
+    <LabelManager 
+        labels={projectLabels}
+        onLabelAdd={handleLabelAdd}
+        onLabelDelete={handleLabelDelete}
+        isSubmitting={false} 
+    />
+</div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <ImageUploadField 
+                      label="Project Image" 
+                      name="projectImage" 
+                      initialImage={project.projectImageUrl}
+                      onChange={(file) => setFormData(prev => ({...prev, projectImage: file || undefined}))} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <ImageUploadField 
+                      label="Banner Image" 
+                      name="bannerImage" 
+                      initialImage={project.bannerImageUrl}
+                      onChange={(file) => setFormData(prev => ({...prev, bannerImage: file || undefined}))} 
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label>Team Members</Label>
-                <MemberSelector selectedMembers={formData.members} onSelectMembers={(ids) => handleChange('members', ids)} />
+                <label className="text-sm font-medium">Project Color</label>
+                <ColorSelector 
+                    selectedColor={formData.color || ''} 
+                    onSelectColor={(color: string) => setFormData(prev => ({ ...prev, color }))} 
+                />
               </div>
-            </div>
-        </div>
-        <DialogFooter className="p-4 border-t border-border/50 flex-shrink-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit}>Save Changes</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            </form>
+          </div>
+          <DialogFooter className="flex-shrink-0 pt-4 flex-nowrap justify-between w-full">
+              <Button variant="destructive" onClick={() => onDelete(project.id)}>Delete Project</Button>
+              <div className="flex gap-2">
+                  <Button variant="ghost" onClick={onClose}>Cancel</Button>
+                  <Button type="submit" form="edit-project-form">Save changes</Button>
+              </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <UserSearchModal
+        isOpen={isUserSearchModalOpen}
+        onClose={() => setIsUserSearchModalOpen(false)}
+        onSelectUsers={handleInviteUsers}
+        excludedUserIds={currentMembers.map(m => m.id)}
+      />
+    </>
   )
 }
