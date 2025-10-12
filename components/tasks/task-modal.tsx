@@ -14,7 +14,7 @@ import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal"
 import { SubtaskList } from "./subtask-list"
 import { CommentSection } from "./comment-section"
 import { AttachmentList } from "./attachment-list"
-import { TaskDetails, Label, Comment } from "@/types"
+import { TaskDetails, Label, Comment, Attachment } from "@/types"
 import { toast } from "sonner"
 import { apiClient } from "@/lib/api"
 import { useApi } from "@/hooks/useApi"
@@ -31,7 +31,10 @@ interface TaskModalProps {
 
 export function TaskModal({ isOpen, onClose, task, onDataChange, showGoToProjectButton }: TaskModalProps) {
   const [isEditing, setIsEditing] = React.useState(false);
-  const [currentTask, setCurrentTask] = React.useState<TaskDetails | null>(task);
+const [currentTask, setCurrentTask] = React.useState<TaskDetails | null>(task);
+  const [newAttachments, setNewAttachments] = React.useState<File[]>([]);
+  const [attachmentsToDelete, setAttachmentsToDelete] = React.useState<string[]>([]);
+
 
   const availableLabels = currentTask
     ? useApi<Label[]>(`/projects/${currentTask.projectId}/labels`).data
@@ -78,24 +81,48 @@ export function TaskModal({ isOpen, onClose, task, onDataChange, showGoToProject
       toast.error(`Failed to add comment: ${(error as Error).message}`);
     }
   };
-  // --- FIN DE LA CORRECCIÓN ---
+  
 
-  const handleSave = async () => {
+const handleSave = async () => {
     if (!currentTask) return;
+    toast.info("Saving task...");
+
     try {
-      const payload = {
-        title: currentTask.title,
-        description: currentTask.description,
-        labels: currentTask.labels.map(label => label._id)
-      };
-      await apiClient.put(`/projects/${currentTask.projectId}/tasks/${currentTask.id}`, payload);
-      toast.success("Task updated successfully!");
-      setIsEditing(false);
-      onDataChange?.();
+        // 1. Subir nuevos archivos si los hay
+        if (newAttachments.length > 0) {
+            const uploadPromises = newAttachments.map(file => {
+                const formData = new FormData();
+                formData.append('file', file);
+                return apiClient.post(`/tasks/${currentTask.id}/attachments`, formData); 
+            });
+            await Promise.all(uploadPromises);
+        }
+
+        // 2. Eliminar adjuntos marcados (si los hay)
+        if (attachmentsToDelete.length > 0) {
+            const deletePromises = attachmentsToDelete.map(id => 
+                apiClient.del(`/tasks/${currentTask.id}/attachments/${id}`)
+            );
+            await Promise.all(deletePromises);
+        }
+
+        // 3. Guardar los demás datos de la tarea
+        const payload = {
+            title: currentTask.title,
+            description: currentTask.description,
+            labels: currentTask.labels.map(label => label._id)
+        };
+        await apiClient.put(`/projects/${currentTask.projectId}/tasks/${currentTask.id}`, payload);
+
+        toast.success("Task updated successfully!");
+        setIsEditing(false);
+        setNewAttachments([]); // Limpiar estado local
+        setAttachmentsToDelete([]); // Limpiar estado local
+        onDataChange?.(); // Refrescar la UI principal
     } catch (error) {
-      toast.error(`Failed to save task: ${(error as Error).message}`);
+        toast.error(`Failed to save task: ${(error as Error).message}`);
     }
-  };
+};
 
   const handleLabelToggle = (labelToToggle: Label) => {
     if (!currentTask || !isEditing) return;
@@ -109,56 +136,32 @@ export function TaskModal({ isOpen, onClose, task, onDataChange, showGoToProject
     });
   };
 
-  const handleAttachmentAdd = async (files: FileList) => {
-    if (!currentTask) return;
-    toast.info(`Uploading ${files.length} file(s)...`);
-    const uploadPromises = Array.from(files).map(file => {
-      const formData = new FormData();
-      formData.append('file', file);
-      return apiClient.post(`/tasks/${currentTask.id}/attachments`, formData);
-    });
+const handleAttachmentAdd = (files: FileList) => {
+    setNewAttachments(prev => [...prev, ...Array.from(files)]);
+};
 
-    try {
-      await Promise.all(uploadPromises);
-      toast.success(`${files.length} file(s) uploaded.`);
-      // Refresca la data de la tarea actual para mostrar los nuevos attachments
-      const updatedTask = await apiClient.get<TaskDetails>(`/tasks/${currentTask.id}`);
-      setCurrentTask(updatedTask);
-      onDataChange?.(); // Actualiza la página principal en segundo plano
-    } catch (error) {
-      toast.error("Failed to upload attachments.");
-      console.error(error);
+const handleAttachmentDelete = (attachmentId: string) => {
+    if (attachmentId.startsWith('new-')) {
+        // Si es un archivo nuevo, solo lo quitamos del estado local
+        const fileName = attachmentId.split('-')[1];
+        setNewAttachments(prev => prev.filter(file => file.name !== fileName));
+    } else {
+        // Si es un archivo existente, lo marcamos para eliminar al guardar
+        setAttachmentsToDelete(prev => [...prev, attachmentId]);
     }
-  };
+};
 
+const allAttachmentsForUI: Attachment[] = React.useMemo(() => [
+    ...(currentTask?.attachments.filter(att => !attachmentsToDelete.includes(att._id)) || []),
+    ...newAttachments.map((file, index) => ({
+    _id: `new-${file.name}-${index}`,
+    name: file.name,
+    url: URL.createObjectURL(file),
+    size: `${(file.size / 1024).toFixed(1)} KB`,
+    type: file.type.startsWith('image/') ? "image" as "image" : "document" as "document",
+}))
+], [currentTask?.attachments, newAttachments, attachmentsToDelete]);
 
-  const handleAttachmentDelete = async (attachmentId: string) => {
-    if (!currentTask) return;
-
-    // 1. Filtra el adjunto a eliminar de la lista actual
-    const updatedAttachments = currentTask.attachments.filter(
-      (att) => att._id !== attachmentId
-    );
-
-    try {
-      toast.info("Deleting attachment...");
-      // 2. Llama al endpoint PUT de la tarea, enviando solo el array de adjuntos actualizado
-      await apiClient.put(`/projects/${currentTask.projectId}/tasks/${currentTask.id}`, {
-        attachments: updatedAttachments.map(att => att._id) // Enviamos solo los IDs
-      });
-
-      // 3. Actualiza el estado local del modal con la nueva lista de adjuntos
-      setCurrentTask(prev => prev ? { ...prev, attachments: updatedAttachments } : null);
-
-      toast.success("Attachment deleted.");
-
-      // 4. Notifica a la página principal para que se refresque
-      onDataChange?.();
-    } catch (error) {
-      toast.error(`Failed to delete attachment: ${(error as Error).message}`);
-      // Nota: En un caso real, aquí se podría revertir el estado si la llamada falla.
-    }
-  };
 
   if (!isOpen || !currentTask) {
     return null;
@@ -265,7 +268,7 @@ export function TaskModal({ isOpen, onClose, task, onDataChange, showGoToProject
             </div>
             <div className="lg:col-span-1 lg:border-l border-border/50 p-6 space-y-6">
               <AttachmentList 
-                attachments={currentTask.attachments} 
+                attachments={allAttachmentsForUI} 
                 isEditing={isEditing} 
                 taskId={currentTask.id}
                 onAttachmentAdd={handleAttachmentAdd}

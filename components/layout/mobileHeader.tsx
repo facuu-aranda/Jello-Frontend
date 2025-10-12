@@ -8,12 +8,14 @@ import { UserMenu } from "@/components/user-menu"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Sidebar } from "./sidebar"
-import { Activity } from "@/types"
+import { Notification } from "@/types"
 import { useApi } from "@/hooks/useApi"
 
 export function MobileHeader() {
-  const { data: notifications } = useApi<Activity[]>('/activity/recent');
-  const notificationCount = notifications?.length || 0;
+  const { data } = useApi<{ notifications: Notification[] }>('/notifications?page=1&limit=10');
+
+// Corregimos cómo se accede a los datos
+const notificationCount = data?.notifications?.filter(n => !n.read).length || 0;
 
   const notificationButton = (
     <Button variant="ghost" size="icon" className="relative rounded-full">

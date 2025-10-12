@@ -60,23 +60,27 @@ export default function ProjectsPage() {
     toast.info("Creating your new project...");
     try {
       const formData = new FormData();
-      
-      // 2. Construcción segura de datos
-      const dataToSend = {
-        name: projectData.name,
-        description: projectData.description || '',
-        color: projectData.color || 'bg-blue-500',
-        dueDate: projectData.dueDate,
-        members: (projectData.members || []).map((id: string) => ({ user: id, role: 'member' }))
-      };
-      formData.append('data', JSON.stringify(dataToSend));
-  
-      if (projectData.projectImage) {
-        formData.append('projectImage', projectData.projectImage);
-      }
-      if (projectData.bannerImage) {
-        formData.append('bannerImage', projectData.bannerImage);
-      }
+
+formData.append('name', projectData.name!);
+formData.append('description', projectData.description || '');
+formData.append('color', projectData.color || 'bg-blue-500');
+
+if (projectData.dueDate) {
+  formData.append('dueDate', projectData.dueDate);
+}
+
+// Los arrays y objetos complejos deben ser convertidos a JSON
+const membersToJSON = JSON.stringify(
+  (projectData.members || []).map((id: string) => ({ user: id, role: 'member' }))
+);
+formData.append('members', membersToJSON);
+
+if (projectData.projectImage) {
+  formData.append('projectImage', projectData.projectImage);
+}
+if (projectData.bannerImage) {
+  formData.append('bannerImage', projectData.bannerImage);
+}
   
       await apiClient.post('/projects', formData);
       toast.success("Project created successfully!");

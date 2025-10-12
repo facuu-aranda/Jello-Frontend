@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { NotificationPanel } from "@/components/notification-panel"
 import { Badge } from "@/components/ui/badge"
 import { useApi } from "@/hooks/useApi";
-import { ProjectSummary, Activity } from "@/types";
+import { ProjectSummary, Notification  } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const navigation = [
@@ -36,8 +36,11 @@ export function Sidebar({ isCollapsed, onToggle, isMobileView = false }: Sidebar
   const { data: projects, isLoading: isLoadingProjects } = useApi<ProjectSummary[]>('/projects');
   
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
-  const { data: notifications } = useApi<Activity[]>('/activity/recent');
-const notificationCount = notifications?.length || 0;
+  
+  const { data } = useApi<{ notifications: Notification[] }>('/notifications?page=1&limit=10');
+
+// Corregimos cómo se accede a los datos
+const notificationCount = data?.notifications?.filter(n => !n.read).length || 0;
 
   const notificationButton = (
     <Button variant="ghost" size="icon" className="relative rounded-full">

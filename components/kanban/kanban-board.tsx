@@ -38,7 +38,7 @@ export function KanbanBoard({ project, onTaskStatusChange, onTaskClick, onAddTas
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <div className="flex gap-6 p-4 overflow-x-auto h-full items-stretch">
+      <div className="flex gap-6  overflow-x-auto h-full items-stretch">
         <KanbanColumn id="todo" title="To Do" tasks={project.tasksByStatus.todo} onAddTask={() => handleAddTask('todo')} onTaskClick={handleTaskClick} />
         <KanbanColumn id="in-progress" title="In Progress" tasks={project.tasksByStatus['in-progress']} onAddTask={() => handleAddTask('in-progress')} onTaskClick={handleTaskClick} />
         <KanbanColumn id="review" title="In Review" tasks={project.tasksByStatus.review} onAddTask={() => handleAddTask('review')} onTaskClick={handleTaskClick} />

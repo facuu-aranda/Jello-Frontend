@@ -1,4 +1,3 @@
-// components/modals/edit-project-modal.tsx
 "use client"
 
 import * as React from "react"
@@ -17,13 +16,12 @@ import { ProjectSummary, UserSummary, Label as LabelType } from "@/types"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { ColorSelector } from "@/components/forms/color-selector"
 import { ImageUploadField } from "@/components/forms/image-upload-field"
-import { UserSearchModal } from "./UserSearchModal" // 1. Usamos el nuevo modal de búsqueda
+import { UserSearchModal } from "./UserSearchModal" 
 import { UserPlus } from "lucide-react"
 import { LabelManager } from "@/components/forms/label-manager"
 import { apiClient } from "@/lib/api"
 import { toast } from "sonner"
 
-// Definimos una interfaz para el formulario
 interface ProjectFormData {
   name: string;
   description: string;
@@ -33,14 +31,13 @@ interface ProjectFormData {
   dueDate?: string;
 }
 
-// Props del componente
 interface EditProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: FormData) => void;
   onDelete: (id: string) => void;
   project: ProjectSummary;
-  onDataChange: () => void; // Para refrescar la UI principal
+  onDataChange: () => void; 
 }
 
 const COLORS = ["#ef4444", "#f97316", "#eab308", "#84cc16", "#22c55e", "#14b8a6", "#06b6d4", "#3b82f6", "#8b5cf6", "#d946ef", "#ec4899"];
@@ -51,13 +48,11 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project,
   const [isUserSearchModalOpen, setIsUserSearchModalOpen] = React.useState(false);
   const [currentMembers, setCurrentMembers] = React.useState<UserSummary[]>([]);
 
-  // --- 2. Estado centralizado para la gestión de Labels ---
-  const [projectLabels, setProjectLabels] = React.useState<LabelType[]>([]);
-  const [labelsToAdd, setLabelsToAdd] = React.useState<string[]>([]);
-  const [labelsToDelete, setLabelsToDelete] = React.useState<string[]>([]);
+const [projectLabels, setProjectLabels] = React.useState<LabelType[]>([]);
+const [labelsToAdd, setLabelsToAdd] = React.useState<string[]>([]);
+const [labelsToDelete, setLabelsToDelete] = React.useState<string[]>([]);
 
   React.useEffect(() => {
-    // Cuando el modal se abre y tenemos un proyecto, cargamos sus datos
     if (project && isOpen) {
       setFormData({
         name: project.name,
@@ -67,12 +62,10 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project,
       });
       setCurrentMembers(project.members);
       
-      // Cargamos los labels actuales del proyecto desde la API
       apiClient.get<LabelType[]>(`/projects/${project.id}/labels`)
-        .then(setProjectLabels)
-        .catch(() => toast.error("Could not load project labels."));
+            .then(setProjectLabels)
+            .catch(() => toast.error("Could not load project labels."));
     } else {
-      // Limpiamos el estado cuando el modal se cierra
       setProjectLabels([]);
       setLabelsToAdd([]);
       setLabelsToDelete([]);
@@ -84,56 +77,45 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project,
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- 3. Funciones para gestionar el estado local de los labels ---
-  const handleLabelAdd = (name: string) => {
-    if (projectLabels.some(l => l.name.toLowerCase() === name.toLowerCase()) || labelsToAdd.includes(name)) {
+  
+const handleLabelAdd = (name: string) => {
+    if (projectLabels.some(l => l.name.toLowerCase() === name.toLowerCase())) {
       toast.error("A label with that name already exists.");
       return;
     }
-    // Añadimos el nombre a la lista de "nuevos"
     setLabelsToAdd(prev => [...prev, name]);
-    // Actualizamos la UI inmediatamente para que el usuario lo vea
     setProjectLabels(prev => [...prev, { _id: `temp-${name}`, name, color: getRandomColor() }]);
-  };
+};
 
-  const handleLabelDelete = (id: string) => {
+const handleLabelDelete = (id: string) => {
     const labelToRemove = projectLabels.find(l => l._id === id);
     if (!labelToRemove) return;
 
-    // Si es un label ya existente en el backend, lo marcamos para borrar
     if (!id.startsWith('temp-')) {
       setLabelsToDelete(prev => [...prev, id]);
     }
-    
-    // Si era un label que acabábamos de añadir, lo quitamos de la lista de "nuevos"
     setLabelsToAdd(prev => prev.filter(name => name !== labelToRemove.name));
-    
-    // Actualizamos la UI para que desaparezca
     setProjectLabels(prev => prev.filter(l => l._id !== id));
-  };
+};
   
-  // --- 4. Lógica de guardado centralizada ---
   const handleSaveChanges = async (e: React.FormEvent) => {
     e.preventDefault();
     toast.info("Saving project changes...");
 
-    // Primero, guardamos los cambios de los labels en un solo batch
     if (labelsToAdd.length > 0 || labelsToDelete.length > 0) {
       try {
         await apiClient.put(`/projects/${project.id}/labels/batch`, {
           add: labelsToAdd.map(name => ({ name, color: getRandomColor() })),
           delete: labelsToDelete,
         });
-        // Limpiamos los arrays de cambios pendientes
         setLabelsToAdd([]);
         setLabelsToDelete([]);
       } catch (err) {
         toast.error(`Failed to update labels: ${(err as Error).message}`);
-        return; // Detenemos la ejecución si los labels fallan
+        return; 
       }
     }
 
-    // Segundo, preparamos y enviamos los demás datos del proyecto
     const data = new FormData();
     data.append('name', formData.name);
     data.append('description', formData.description);
@@ -141,11 +123,9 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project,
     if (formData.projectImage) data.append('projectImage', formData.projectImage);
     if (formData.bannerImage) data.append('bannerImage', formData.bannerImage);
     
-    // La función onSubmit, pasada como prop, se encarga de la llamada final y de cerrar el modal
     onSubmit(data);
   };
   
-  // Función para invitar a los nuevos miembros seleccionados
   const handleInviteUsers = async (selectedUsers: UserSummary[]) => {
     setIsUserSearchModalOpen(false);
     if (selectedUsers.length === 0) return;
@@ -159,7 +139,7 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project,
     try {
       await Promise.all(invitePromises);
       toast.success("Invitations sent successfully!");
-      onDataChange(); // Refresca los datos para mostrar los miembros nuevos o pendientes
+      onDataChange();
     } catch (error) {
       toast.error(`Failed to send invitations: ${(error as Error).message}`);
     }
@@ -204,14 +184,16 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project,
                   ))}
                 </div>
               </div>
-              
-              <div className="space-y-2">
-                  <label className="text-sm font-medium">Project Labels</label>
-                  <LabelManager 
-                    projectId={project.id}
-                    onDataChange={onDataChange} 
-                  />
-              </div>
+
+<div className="space-y-2">
+    <label className="text-sm font-medium">Project Labels</label>
+    <LabelManager 
+        labels={projectLabels}
+        onLabelAdd={handleLabelAdd}
+        onLabelDelete={handleLabelDelete}
+        isSubmitting={false} 
+    />
+</div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">

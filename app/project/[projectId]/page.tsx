@@ -1,9 +1,7 @@
-// Jello-Frontend/app/project/[projectId]/page.tsx
-
 "use client"
 
 import * as React from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useApi } from '@/hooks/useApi'
 import { ProjectDetails, TaskSummary, TaskDetails } from '@/types'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -22,6 +20,7 @@ import { ActivityFeed } from '@/components/activity/ActivityFeed'
 export default function ProjectPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const projectId = params.projectId as string;
 
   const { data: project, isLoading, error, refetch, setData: setProject } = useApi<ProjectDetails>(`/projects/${projectId}`);
@@ -74,7 +73,7 @@ export default function ProjectPage() {
     }
    };
   
-  const handleTaskClick = async (taskSummary: TaskSummary) => {
+ const handleTaskClick = async (taskSummary: TaskSummary) => {
     try {
       toast.info("Loading task details...");
       const detailedTask = await apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`);
@@ -91,14 +90,25 @@ export default function ProjectPage() {
     setIsCreateTaskModalOpen(true);
   }
 
-  // --- INICIO DE LA CORRECCIÓN: Lógica de 2 pasos para crear tarea con adjuntos ---
+
+  React.useEffect(() => {
+    const taskIdFromUrl = searchParams.get('taskId');
+    if (taskIdFromUrl && project) {
+      // Buscamos la tarea en los datos del proyecto para evitar una llamada extra si ya la tenemos
+      const taskSummary = Object.values(project.tasksByStatus).flat().find(t => t.id === taskIdFromUrl);
+      if (taskSummary) {
+        handleTaskClick(taskSummary);
+        // Opcional: limpiar el parámetro de la URL para que no se vuelva a abrir al recargar
+        router.replace(`/project/${projectId}`, { scroll: false });
+      }
+    }
+  }, [searchParams, project, router, projectId]);
+
    const handleCreateTask = async (formData: FormData) => {
     setIsCreateTaskModalOpen(false);
     toast.info("Creating new task...");
 
     try {
-      // CORRECCIÓN: No manipulamos el FormData. Lo enviamos directamente.
-      // El backend ya sabe cómo interpretar tanto los campos de texto como los archivos.
       const newTask = await apiClient.post<TaskSummary>(`/projects/${projectId}/tasks`, formData);
       
       toast.success(`Task "${newTask.title}" created!`);

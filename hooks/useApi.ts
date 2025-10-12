@@ -29,6 +29,5 @@ export function useApi<T>(endpoint: string) {
     fetchData();
   }, [fetchData]);
 
-  // ✨ CORRECCIÓN: Devolvemos 'setData' para permitir actualizaciones optimistas.
   return { data, isLoading, error, refetch: fetchData, setData };
 }

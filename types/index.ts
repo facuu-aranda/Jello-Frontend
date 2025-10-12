@@ -150,20 +150,29 @@ export interface NotificationProjectSummary {
 }
 
 export interface Notification {
-  _id: string
-  recipient: string
-  sender: UserSummary
+  _id: string;
+  recipient: string;
+  sender: UserSummary;
   type:
     | "project_invitation"
     | "collaboration_request"
-    | "task_assignment"
-    | "new_comment" // <--- AÑADIDO
-    | "mention"     // <--- AÑADIDO
-    | "generic"
-  project: NotificationProjectSummary
-  task?: string // <--- AÑADIDO (ID de la tarea, opcional)
-  read: boolean
-  status: "pending" | "accepted" | "declined"
-  message: string
-  createdAt: string
+    | "task_created"
+    | "task_assigned"
+    | "task_status_changed"
+    | "new_comment"
+    | "invitation_accepted"
+    | "invitation_declined"
+    | "collaboration_accepted"
+    | "collaboration_declined";
+  status: "pending" | "accepted" | "declined" | "info"; // Se añade 'info'
+  read: boolean;
+  project: {
+    _id: string;
+    name: string;
+  };
+  task?: string;
+  text: string; 
+  link: string;
+  createdAt: string;
+  updatedAt: string;
 }

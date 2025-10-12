@@ -17,9 +17,9 @@ interface ProjectHeaderProps {
 export function ProjectHeader({ project, onEdit, onInviteMembers }: ProjectHeaderProps) {
 
   return (
-    <div className="relative flex flex-col p-6 pt-0">
+    <div className="relative flex flex-col p-6 pt-0 bg-card/70 rounded-2xl">
       {/* Banner Image */}
-      <div className="h-40 bg-muted rounded-2xl overflow-hidden -mx-6 -mt-0 mb-8 relative">
+      <div className="h-40 bg-muted  rounded-t-2xl overflow-hidden -mx-6 -mt-0 mb-8 relative">
         <img 
           src={project.bannerImageUrl || "/placeholder.jpg"} 
           alt={`${project.name} banner`}
