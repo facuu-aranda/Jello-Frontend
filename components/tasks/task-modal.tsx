@@ -1,4 +1,3 @@
-// Jello-Frontend/components/tasks/task-modal.tsx
 
 "use client"
 
@@ -14,12 +13,16 @@ import { Modal, ModalContent, ModalHeader } from "@/components/ui/modal"
 import { SubtaskList } from "./subtask-list"
 import { CommentSection } from "./comment-section"
 import { AttachmentList } from "./attachment-list"
-import { TaskDetails, Label, Comment, Attachment } from "@/types"
 import { toast } from "sonner"
 import { apiClient } from "@/lib/api"
 import { useApi } from "@/hooks/useApi"
 import { cn } from "@/lib/utils"
 import { AttachmentViewerModal } from "../modals/AttachmentViewerModal"
+import { User, Calendar, Flag } from "lucide-react"
+import { DatePicker } from "@/components/ui/date-picker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AssigneeSelector } from "../forms/assignee-selector";
+import { TaskDetails, Label, Comment, Attachment, TaskPriority, UserSummary } from "@/types"; 
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -27,14 +30,21 @@ interface TaskModalProps {
   task: TaskDetails | null;
   onDataChange?: () => void;
   showGoToProjectButton?: boolean;
+  projectMembers: UserSummary[];
 }
 
-export function TaskModal({ isOpen, onClose, task, onDataChange, showGoToProjectButton }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, task, onDataChange, showGoToProjectButton, projectMembers }: TaskModalProps) {
   const [isEditing, setIsEditing] = React.useState(false);
 const [currentTask, setCurrentTask] = React.useState<TaskDetails | null>(task);
   const [newAttachments, setNewAttachments] = React.useState<File[]>([]);
   const [attachmentsToDelete, setAttachmentsToDelete] = React.useState<string[]>([]);
 
+  const priorityOptions: { value: TaskPriority; label: string }[] = [
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
+    { value: 'critical', label: 'Critical' },
+  ];
 
   const availableLabels = currentTask
     ? useApi<Label[]>(`/projects/${currentTask.projectId}/labels`).data
@@ -46,7 +56,6 @@ const [currentTask, setCurrentTask] = React.useState<TaskDetails | null>(task);
     setIsEditing(false);
   }, [task]);
 
-  // 2. Esta función ahora recibe el ID y lo guarda en el estado.
   const handleViewAttachment = (attachmentId: string) => {
     setViewingAttachmentId(attachmentId);
   };
@@ -64,7 +73,6 @@ const [currentTask, setCurrentTask] = React.useState<TaskDetails | null>(task);
       toast.info("Adding comment...");
       const newComment = await apiClient.post<Comment>(`/tasks/${currentTask.id}/comments`, formData);
 
-      // Actualización local inmediata del estado del modal
       setCurrentTask(prevTask => {
         if (!prevTask) return null;
         return {
@@ -75,7 +83,6 @@ const [currentTask, setCurrentTask] = React.useState<TaskDetails | null>(task);
 
       toast.success("Comment added!");
 
-      // Refresca los datos de la página principal en segundo plano para actualizar contadores
       onDataChange?.();
     } catch (error) {
       toast.error(`Failed to add comment: ${(error as Error).message}`);
@@ -110,8 +117,12 @@ const handleSave = async () => {
         const payload = {
             title: currentTask.title,
             description: currentTask.description,
-            labels: currentTask.labels.map(label => label._id)
+            labels: currentTask.labels.map(label => label._id),
+            assignees: currentTask.assignees.map(a => a.id),
+            priority: currentTask.priority,
+            dueDate: currentTask.dueDate,
         };
+        
         await apiClient.put(`/projects/${currentTask.projectId}/tasks/${currentTask.id}`, payload);
 
         toast.success("Task updated successfully!");
@@ -207,6 +218,7 @@ const allAttachmentsForUI: Attachment[] = React.useMemo(() => [
               </div>
             </div>
           </ModalHeader>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 max-h-[calc(100vh-80px)] overflow-y-auto">
             <div className="lg:col-span-2 space-y-6 p-6">
               <div className="space-y-3">
@@ -221,6 +233,48 @@ const allAttachmentsForUI: Attachment[] = React.useMemo(() => [
                   <p className="text-sm text-muted-foreground">{currentTask.description || "No description provided."}</p>
                 )}
               </div>
+              
+               {isEditing && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pb-6 border-b">
+                    {/* Asignados */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground"><User className="w-4 h-4" /> Assignees</h3>
+                      <AssigneeSelector
+                        projectMembers={projectMembers}
+                        selectedAssignees={currentTask.assignees.map(a => a.id)}
+                        onSelectionChange={(selectedIds) => {
+                          const updatedAssignees = projectMembers.filter(m => selectedIds.includes(m.id));
+                          setCurrentTask(prev => prev ? { ...prev, assignees: updatedAssignees } : null);
+                        }}
+                      />
+                    </div>
+                    {/* Fecha de Vencimiento */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground"><Calendar className="w-4 h-4" /> Due Date</h3>
+                      <DatePicker
+                        date={currentTask.dueDate ? new Date(currentTask.dueDate) : undefined}
+                        setDate={(date) => setCurrentTask(prev => prev ? { ...prev, dueDate: date?.toISOString() ?? null } : null)}
+                      />
+                    </div>
+                    {/* Prioridad */}
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold flex items-center gap-2 text-muted-foreground"><Flag className="w-4 h-4" /> Priority</h3>
+                      <Select
+                        value={currentTask.priority}
+                        onValueChange={(priority: TaskPriority) => setCurrentTask(prev => prev ? { ...prev, priority } : null)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {priorityOptions.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
 
               {(isEditing || (currentTask.labels && currentTask.labels.length > 0)) && (
                 <div className="space-y-3">

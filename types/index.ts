@@ -85,12 +85,14 @@ export interface Comment {
   attachmentUrl?: string; 
 }
 
+export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
+
 export interface TaskSummary {
   id: string;
   title: string;
   description?: string | null;
   status: 'todo' | 'in-progress' | 'review' | 'done';
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: TaskPriority;
   labels: Label[];
   assignees: UserSummary[];
   dueDate: string | null;
@@ -113,7 +115,7 @@ export interface TaskDetails extends Omit<TaskSummary, 'subtasks' | 'commentCoun
 
 // -------------------- OTROS --------------------
 export interface Todo {
-  id: string;
+  _id: string;
   text: string;
   completed: boolean;
   priority: 'low' | 'medium' | 'high';

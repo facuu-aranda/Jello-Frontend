@@ -59,7 +59,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       handleAuthSuccess(response);
     } catch (error) {
       toast.error((error as Error).message);
-      throw error;
     }
   };
 

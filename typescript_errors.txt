@@ -1,7 +1,0 @@
-Reporte de Errores de TypeScript para el proyecto: C:\Users\LAPTOP\Desktop\Work\Jello\Jello-Frontend\
-Generado el: 12/10/2025, 15:55:08
-================================================================================
-
-Listado de errores encontrados:
-
-components/tasks/task-modal.test.tsx(26,14): error TS2353: Object literal may only specify known properties, and 'id' does not exist in type 'Label'.

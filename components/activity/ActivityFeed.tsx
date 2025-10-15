@@ -1,4 +1,3 @@
-// Jello-Frontend/components/activity/activity-feed.tsx
 
 "use client"
 
@@ -8,6 +7,7 @@ import { Activity } from '@/types'
 import { ActivityItem } from './ActivityItem'
 import { Skeleton } from '@/components/ui/skeleton'
 import { AlertTriangle, List } from 'lucide-react'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface ActivityFeedProps {
   projectId: string;
@@ -44,15 +44,18 @@ export function ActivityFeed({ projectId }: ActivityFeedProps) {
         <List className="w-6 h-6" />
         Recent Activity
       </h2>
-      <div className="space-y-2">
-        {activities && activities.length > 0 ? (
-          activities.map((activity, index) => (
-            <ActivityItem key={activity.id} activity={activity} index={index} />
-          ))
-        ) : (
-          <p className="text-muted-foreground p-4 text-center">No recent activity in this project.</p>
-        )}
-      </div>
+      {/* 2. Envolver la lista en ScrollArea y aplicar clases de altura */}
+      <ScrollArea className="h-[400px] pr-4">
+        <div className="space-y-2">
+          {activities && activities.length > 0 ? (
+            activities.map((activity, index) => (
+              <ActivityItem key={activity.id} activity={activity} index={index} />
+            ))
+          ) : (
+            <p className="text-muted-foreground p-4 text-center">No recent activity in this project.</p>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   )
 }

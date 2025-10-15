@@ -61,7 +61,7 @@ export default function PersonalTodosPage() {
     }
   }
 
-  const toggleTodo = async (id: string, completed: boolean) => {
+   const toggleTodo = async (id: string, completed: boolean) => { 
     try {
         await apiClient.put(`/todos/${id}`, { completed });
         toast.success(`Task ${completed ? 'completed' : 'reopened'}!`);
@@ -162,12 +162,22 @@ export default function PersonalTodosPage() {
                   <Input placeholder="What do you need to do?" value={newTodoText} onChange={(e) => setNewTodoText(e.target.value)} className="text-lg h-12" autoFocus />
                   <div className="grid sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label>Priority</Label>
-                      <Select value={newTodoPriority} onValueChange={(v: "low" | "medium" | "high") => setNewTodoPriority(v)}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{priorities.filter(p => p.value !== 'All').map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
+    <Label>Priority</Label>
+    <Select 
+        value={newTodoPriority} 
+        onValueChange={(value) => setNewTodoPriority(value as Todo['priority'])}
+    >
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+            {priorities.filter(p => p.value !== 'All').map(p => 
+                <SelectItem key={p.value} value={p.value}>
+                    {p.label}
+                </SelectItem>
+            )}
+        </SelectContent>
+    </Select>
+</div>
+
                     <div className="space-y-2">
                       <Label>Category</Label>
                       <Select value={newTodoCategory} onValueChange={(v: string) => setNewTodoCategory(v)}>
@@ -204,9 +214,9 @@ export default function PersonalTodosPage() {
           <div className="space-y-3">
             <AnimatePresence>
               {filteredTodos.map((todo) => (
-                <motion.div key={todo.id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }} className="glass-card p-4 rounded-2xl">
+                <motion.div key={todo._id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }} className="glass-card p-4 rounded-2xl">
                   <div className="flex items-center gap-4">
-                    <Checkbox checked={todo.completed} onCheckedChange={(checked) => toggleTodo(todo.id, !!checked)} />
+                    <Checkbox checked={todo.completed} onCheckedChange={(checked) => toggleTodo(todo._id, !!checked)} />
                     <div className="flex-1">
                       <p className={`text-base ${todo.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>{todo.text}</p>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
@@ -221,7 +231,7 @@ export default function PersonalTodosPage() {
                     <AnimatePresence>
                       {isManaging && (
                         <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => deleteTodo(todo.id)}>
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => deleteTodo(todo._id)}>
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </motion.div>

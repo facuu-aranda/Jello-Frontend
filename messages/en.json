@@ -1,0 +1,29 @@
+{
+  "LoginForm": {
+    "welcome": "Welcome back!",
+    "signInToContinue": "Sign in to continue to Jello",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "rememberMe": "Remember me",
+    "signInButton": "Sign in",
+    "signingInButton": "Signing in...",
+    "orContinueWith": "Or continue with",
+    "noAccount": "Don't have an account?",
+    "signUpLink": "Sign up"
+  },
+  "Sidebar": {
+    "dashboard": "Dashboard",
+    "search": "Search",
+    "projects": "Projects",
+    "myTasks": "My Tasks",
+    "todos": "Todos",
+    "createProject": "Create Project"
+  },
+  "Dashboard": {
+    "greeting": "Good morning, {name}!",
+    "subtitle": "Here's what's happening with your projects today.",
+    "newProject": "New Project",
+    "recentProjects": "Recent Projects",
+    "viewAllProjects": "View all projects"
+  }
+}
