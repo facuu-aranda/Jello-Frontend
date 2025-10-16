@@ -1,3 +1,5 @@
+// Jello-Frontend/app/landing/page.tsx (Versión Final con Estilos de Tarjeta Unificados)
+
 "use client";
 
 import * as React from "react";
@@ -5,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
+// Iconos de Lucide React
 import {
     ArrowRight,
     Menu,
@@ -21,6 +24,7 @@ import {
     Check,
 } from "lucide-react";
 
+// Componentes de UI y layout existentes
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -48,7 +52,7 @@ export default function FinalStyledLandingPage() {
                     <HeroSection onRegister={() => setIsRegisterModalOpen(true)} />
                     <DetailedFeaturesSection />
                     <PricingSection onRegister={() => setIsRegisterModalOpen(true)} />
-                    <TestimonialsSection onRegister={() => setIsRegisterModalOpen(true)}  />
+                    <TestimonialsSection onRegister={() => setIsRegisterModalOpen(true)}/>
                     <CtaSection onRegister={() => setIsRegisterModalOpen(true)} />
                 </main>
 
@@ -83,7 +87,7 @@ const Navbar = ({ onLogin, onRegister }: { onLogin: () => void; onRegister: () =
     const NavItems = () => (
         <>
             {navLinks.map((link) => (
-                <Link key={link.name} href={link.href} className="text-sm font-medium text-card-foreground hover:text-foreground transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+                <Link key={link.name} href={link.href} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
                     {link.name}
                 </Link>
             ))}
@@ -133,7 +137,7 @@ const HeroSection = ({ onRegister }: { onRegister: () => void; }) => {
                     <h1 className="text-4xl sm:text-5xl md:text-7xl font-extrabold text-balance leading-tight bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">
                         Encuentra y Conecta. <br /> Construye sin Límites.
                     </h1>
-                    <p className="mt-6 max-w-3xl mx-auto text-lg text-card-foreground text-pretty">
+                    <p className="mt-6 max-w-3xl mx-auto text-lg text-muted-foreground text-pretty">
                         Jello es la plataforma flexible que une a personas y proyectos. Busca talento, explora iniciativas de código abierto o gestiona tu próximo gran producto en un solo lugar.
                     </p>
                     <div className="mt-10 flex flex-col sm:flex-row justify-center items-center gap-4">
@@ -163,7 +167,6 @@ const DetailedFeaturesSection = () => {
         { icon: FolderSearch, title: "Descubre Proyectos", description: "Explora proyectos públicos y open-source. ¡Encuentra tu próxima gran contribución!" },
         { icon: Users, title: "Encuentra Talento", description: "Utiliza nuestra búsqueda para filtrar usuarios por habilidades y roles. Construye tu equipo ideal." },
         { icon: Shield, title: "Control Total", description: "Decide quién ve tu trabajo. Mantén tus proyectos comerciales privados o ábrelos al mundo." },
-    
         { icon: Briefcase, title: "Productos y Startups", description: "Herramientas para equipos que buscan lanzar su próximo gran producto." },
         { icon: BookOpen, title: "Código Abierto", description: "Plataforma transparente para colaborar en proyectos open-source." },
         { icon: Heart, title: "Iniciativas Sociales", description: "Organiza voluntarios y gestiona campañas para maximizar tu impacto." },
@@ -174,7 +177,7 @@ const DetailedFeaturesSection = () => {
             <div className="container max-w-7xl mx-auto">
                 <div className="text-center space-y-4 mb-20">
                     <h2 className="text-4xl font-bold">Un Ecosistema Completo para tu Productividad</h2>
-                    <p className="text-lg text-card-foreground max-w-3xl mx-auto">Desde la gestión de tareas hasta la búsqueda de talento, Jello tiene todo lo que necesitas para llevar tus ideas a la realidad.</p>
+                    <p className="text-lg text-muted-foreground max-w-3xl mx-auto">Desde la gestión de tareas hasta la búsqueda de talento, Jello tiene todo lo que necesitas para llevar tus ideas a la realidad.</p>
                 </div>
 
                 <div className="space-y-20">
@@ -188,7 +191,7 @@ const DetailedFeaturesSection = () => {
                             <div className="w-full md:w-1/2 space-y-6 text-center md:text-left">
                                 <feature.icon className="h-10 w-10 text-primary mx-auto md:mx-0" />
                                 <h3 className="text-3xl font-bold">{feature.title}</h3>
-                                <p className="text-lg text-card-foreground">{feature.description}</p>
+                                <p className="text-lg text-muted-foreground">{feature.description}</p>
                                 <ul className="space-y-3">
                                     {feature.points.map((point, i) => (<li key={i} className="flex items-start gap-3 text-lg"><Check className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" /><span>{point}</span></li>))}
                                 </ul>
@@ -197,10 +200,10 @@ const DetailedFeaturesSection = () => {
                     ))}
                 </div>
 
-                <div className="mt-24 pt-16 border-t border-border">
+                <div className="mt-24 pt-16">
                     <div className="text-center space-y-4 mb-16">
                          <h2 className="text-4xl font-bold">Una Plataforma, Infinitas Posibilidades</h2>
-                         <p className="text-lg text-card-foreground max-w-3xl mx-auto">Jello está diseñado para ser tan flexible como tus proyectos. No importa si es privado, público o para una causa social.</p>
+                         <p className="text-lg text-muted-foreground max-w-3xl mx-auto">Jello está diseñado para ser tan flexible como tus proyectos. No importa si es privado, público o para una causa social.</p>
                     </div>
                     {/* --- INICIO DE CAMBIOS DE ESTILO --- */}
                     <div className="grid md:grid-cols-3 gap-8 mb-12">
@@ -214,13 +217,12 @@ const DetailedFeaturesSection = () => {
                                         <CardTitle className="text-xl">{feature.title}</CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-0 pt-4">
-                                        <p className="text-card-foreground">{feature.description}</p>
+                                        <p className="text-muted-foreground">{feature.description}</p>
                                     </CardContent>
                                 </Card>
                             </motion.div>
                         ))}
                     </div>
-                     
                     {/* --- FIN DE CAMBIOS DE ESTILO --- */}
                 </div>
             </div>
@@ -239,7 +241,7 @@ const PricingSection = ({ onRegister }: { onRegister: () => void; }) => {
             <div className="container max-w-6xl mx-auto">
                 <div className="text-center space-y-4 mb-16">
                     <h2 className="text-4xl font-bold">Planes Simples, Resultados Potentes</h2>
-                    <p className="text-lg text-card-foreground max-w-3xl mx-auto">Encuentra el plan que se adapte a tus necesidades, sea cual sea el tamaño de tu equipo.</p>
+                    <p className="text-lg text-muted-foreground max-w-3xl mx-auto">Encuentra el plan que se adapte a tus necesidades, sea cual sea el tamaño de tu equipo.</p>
                 </div>
                 <div className="grid lg:grid-cols-3 gap-8 items-stretch">
                     {tiers.map((tier, index) => (
@@ -249,9 +251,9 @@ const PricingSection = ({ onRegister }: { onRegister: () => void; }) => {
                                     {tier.popular && <div className="absolute top-0 right-0 -mt-3 mr-6 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full">MÁS POPULAR</div>}
                                     <CardTitle className="text-2xl font-bold">{tier.name}</CardTitle>
                                     <div className="flex items-baseline mt-2">
-                                        {tier.price !== "Personalizado" ? (<><span className="text-5xl font-extrabold">${tier.price}</span><span className="text-lg font-medium text-card-foreground">{tier.period}</span></>) : (<span className="text-3xl font-extrabold">{tier.price}</span>)}
+                                        {tier.price !== "Personalizado" ? (<><span className="text-5xl font-extrabold">${tier.price}</span><span className="text-lg font-medium text-muted-foreground">{tier.period}</span></>) : (<span className="text-3xl font-extrabold">{tier.price}</span>)}
                                     </div>
-                                    <CardDescription className="text-sm text-card-foreground mt-2">{tier.description}</CardDescription>
+                                    <CardDescription className="text-sm text-muted-foreground mt-2">{tier.description}</CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex-grow space-y-3">
                                     <ul className="space-y-3">
@@ -281,14 +283,14 @@ const TestimonialsSection = ({ onRegister }: { onRegister: () => void; }) => {
             <div className="container max-w-7xl mx-auto">
                 <div className="text-center space-y-4 mb-16">
                     <h2 className="text-4xl font-bold">Amado por equipos de todo el mundo</h2>
-                    <p className="text-lg text-card-foreground max-w-3xl mx-auto">Cientos de equipos confían en Jello para potenciar su productividad diaria.</p>
+                    <p className="text-lg text-muted-foreground max-w-3xl mx-auto">Cientos de equipos confían en Jello para potenciar su productividad diaria.</p>
                 </div>
                 <div className="grid md:grid-cols-3 gap-8">
                     {testimonials.map((testimonial, index) => (
                         <motion.div key={testimonial.name} className="glass-card p-6 text-center space-y-4 border border-border/50 shadow-lg flex flex-col justify-between" initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.6, delay: index * 0.1 }}>
                             <div>
                                 <div className="flex justify-center mb-3">{[...Array(testimonial.rating)].map((_, i) => (<Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />))}</div>
-                                <p className="text-card-foreground italic text-pretty leading-relaxed">"{testimonial.text}"</p>
+                                <p className="text-muted-foreground italic text-pretty leading-relaxed">"{testimonial.text}"</p>
                             </div>
                             <div className="mt-6">
                                 <Avatar className="w-16 h-16 mx-auto mb-3 border-4 border-background shadow-lg"><AvatarImage src={testimonial.avatar} alt={testimonial.name} /><AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback></Avatar>
@@ -308,7 +310,7 @@ const CtaSection = ({ onRegister }: { onRegister: () => void; }) => (
         <div className="container max-w-4xl mx-auto text-center">
             <motion.div className="space-y-6" initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.6 }}>
                 <h2 className="text-4xl lg:text-5xl font-bold text-balance">Tu Futuro Productivo Comienza Hoy</h2>
-                <p className="text-xl text-card-foreground max-w-2xl mx-auto text-pretty">Únete a la nueva era de la gestión de proyectos. Es gratis, es potente, es Jello.</p>
+                <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-pretty">Únete a la nueva era de la gestión de proyectos. Es gratis, es potente, es Jello.</p>
                 <Button size="lg" className="group text-lg py-7 px-8 hover:scale-105 transition-transform duration-300" onClick={onRegister}>
                     Empieza a construir tu éxito
                     <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -328,11 +330,11 @@ const Footer = () => (
                         <span className="text-xl font-bold">Jello</span>
                     </Link>
                     <nav className="flex gap-6">
-                        <Link href="#features" className="text-sm text-card-foreground hover:text-foreground">Características</Link>
-                        <Link href="#pricing" className="text-sm text-card-foreground hover:text-foreground">Precios</Link>
-                        <Link href="#testimonials" className="text-sm text-card-foreground hover:text-foreground">Testimonios</Link>
+                        <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground">Características</Link>
+                        <Link href="#pricing" className="text-sm text-muted-foreground hover:text-foreground">Precios</Link>
+                        <Link href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground">Testimonios</Link>
                     </nav>
-                    <p className="text-sm text-card-foreground">© {new Date().getFullYear()} Jello. Todos los derechos reservados.</p>
+                    <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} Jello. Todos los derechos reservados.</p>
                 </div>
             </div>
         </div>
