@@ -1,3 +1,5 @@
+"use client";
+
 // 1. Importa Suspense y saca el Spinner del return
 import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -8,7 +10,6 @@ import { UserProfile } from '@/types';
 import * as React from 'react'; // Asegúrate de que React esté importado
 
 // 2. Mueve toda la lógica a un nuevo componente "use client"
-"use client";
 function CallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();

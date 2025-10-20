@@ -1,3 +1,5 @@
+"use client";
+
 // 1. Importa Suspense y saca el Spinner del return
 import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -6,7 +8,6 @@ import { Spinner } from '@/components/ui/spinner';
 import * as React from 'react'; // Asegúrate de que React esté importado
 
 // 2. Mueve toda la lógica a un nuevo componente "use client"
-"use client";
 function VerifyEmailClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -40,6 +41,7 @@ function VerifyEmailClient() {
   );
 }
 
+// 4. La página principal (Server Component) envuelve al cliente en Suspense
 export default function VerifyEmailPage() {
   const fallbackUI = (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
