@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Search, ArrowRight, AlertTriangle } from "lucide-react"
 import { TaskModal } from "@/components/tasks/task-modal"
 import { cn } from "@/lib/utils"
-import { TaskDetails, TaskSummary } from "@/types"
+// --- CAMBIO: Se importan ProjectDetails y UserSummary ---
+import { TaskDetails, TaskSummary, ProjectDetails as ProjectDetailsType, UserSummary } from "@/types"
 import { useApi } from "@/hooks/useApi"
 import { apiClient } from "@/lib/api"
 import { toast } from "sonner"
@@ -25,13 +26,16 @@ const statusConfig: { [key: string]: { color: string; label: string } } = {
 };
 
 export default function MyTasksPage() {
-    // --- MODIFICADO: Estado para filtros y datos de la API ---
     const [searchQuery, setSearchQuery] = React.useState("");
     const [statusFilter, setStatusFilter] = React.useState<keyof typeof statusConfig>("all");
     const { data: tasks, isLoading, error, refetch } = useApi<TaskSummary[]>(`/tasks/my-tasks`);
+    
+    // --- CAMBIO: Estados para manejar los datos del modal ---
     const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
+    const [projectMembersForTask, setProjectMembersForTask] = React.useState<UserSummary[]>([]);
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
 
-    // --- MODIFICADO: Lógica de filtrado en el frontend ---
+
     const filteredTasks = React.useMemo(() => {
         return tasks?.filter((task) => {
             const matchesStatus = statusFilter === "all" || task.status === statusFilter;
@@ -47,17 +51,32 @@ export default function MyTasksPage() {
         done: tasks?.filter((t) => t.status === "done").length || 0,
     }), [tasks]);
 
-    // --- NUEVO: Función para abrir el modal con detalles de la tarea ---
+    // --- CAMBIO: La función ahora es async y busca los miembros del proyecto ---
     const handleTaskView = async (taskSummary: TaskSummary) => {
         try {
             toast.info("Loading task details...");
-            const taskDetails = await apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`);
+            
+            const [taskDetails, projectDetails] = await Promise.all([
+              apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`),
+              apiClient.get<ProjectDetailsType>(`/projects/${taskSummary.projectId}`)
+            ]);
+            
             setSelectedTask(taskDetails);
+            setProjectMembersForTask(projectDetails.members);
+            setIsModalOpen(true);
+            
             toast.dismiss();
         } catch (err) {
             toast.error("Failed to load task details.");
+            toast.dismiss();
         }
     };
+
+    const handleModalClose = () => {
+      setIsModalOpen(false);
+      setSelectedTask(null);
+      setProjectMembersForTask([]);
+    }
     
     const StatCard = ({ status, count }: { status: keyof typeof tasksByStatus | 'all'; count: number }) => {
         const config = statusConfig[status];
@@ -98,7 +117,6 @@ export default function MyTasksPage() {
                         <Input placeholder="Search tasks..." className="pl-12 h-11" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </div>
                     
-                    {/* --- MODIFICADO: Manejo de estados de carga y error --- */}
                     {isLoading ? (
                         <div className="space-y-4">
                             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}
@@ -142,11 +160,13 @@ export default function MyTasksPage() {
                 </div>
             </AppLayout>
 
+            {/* --- CAMBIO: Pasamos la prop `projectMembers` al modal --- */}
             <TaskModal
-                isOpen={!!selectedTask}
-                onClose={() => setSelectedTask(null)}
+                isOpen={isModalOpen}
+                onClose={handleModalClose}
                 task={selectedTask}
                 onDataChange={refetch}
+                projectMembers={projectMembersForTask}
                 showGoToProjectButton={true}
             />
         </>

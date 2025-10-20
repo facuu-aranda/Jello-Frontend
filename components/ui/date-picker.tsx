@@ -9,8 +9,6 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-// --- 1. Importar el Portal del Diálogo ---
-import { DialogPortal } from "@/components/ui/dialog" 
 
 interface DatePickerProps {
   date: Date | undefined;
@@ -30,18 +28,14 @@ export function DatePicker({ date, setDate }: DatePickerProps) {
         </Button>
       </PopoverTrigger>
       
-      {/* --- 2. Envolver el contenido del Popover en el Portal del Diálogo --- */}
-      <DialogPortal>
-        <PopoverContent className="w-auto p-0">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={setDate}
-            initialFocus
-          />
-        </PopoverContent>
-      </DialogPortal>
-      
+      <PopoverContent className="w-auto p-0">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={setDate}
+          initialFocus
+        />
+      </PopoverContent>
     </Popover>
   )
 }

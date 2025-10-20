@@ -109,9 +109,9 @@ export default function PersonalTodosPage() {
           <div className="space-y-3">
             <AnimatePresence>
               {filteredTodos.map((todo) => (
-                <motion.div key={todo.id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }} className="glass-card p-4 rounded-2xl">
+                <motion.div key={todo._id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }} className="glass-card p-4 rounded-2xl">
                   <div className="flex items-center gap-4">
-                    <Checkbox checked={todo.completed} onCheckedChange={(checked) => toggleTodo(todo.id, !!checked)} />
+                    <Checkbox checked={todo.completed} onCheckedChange={(checked) => toggleTodo(todo._id, !!checked)} />
                     {/* ... (Resto del renderizado del todo se mantiene igual, usando deleteTodo) ... */}
                   </div>
                 </motion.div>

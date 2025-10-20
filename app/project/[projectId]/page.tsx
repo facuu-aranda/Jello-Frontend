@@ -24,7 +24,7 @@ export default function ProjectPage() {
   const projectId = params.projectId as string;
 
   const { data: project, isLoading, error, refetch, setData: setProject } = useApi<ProjectDetails>(`/projects/${projectId}`);
-  
+
   const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = React.useState(false);
   const [isCreateTaskModalOpen, setIsCreateTaskModalOpen] = React.useState(false);
@@ -35,7 +35,7 @@ export default function ProjectPage() {
 
   const handleTaskStatusChange = async (result: DropResult) => {
     if (!project) return;
-    
+
     const { source, destination, draggableId } = result;
     if (!destination) return;
 
@@ -46,34 +46,34 @@ export default function ProjectPage() {
 
     const sourceTasks = [...originalProject.tasksByStatus[sourceColumnId]];
     const destTasks = source.droppableId === destination.droppableId ? sourceTasks : [...originalProject.tasksByStatus[destColumnId]];
-    
+
     const [movedTask] = sourceTasks.splice(source.index, 1);
-    
+
     if (!movedTask) return;
 
     movedTask.status = destColumnId;
     destTasks.splice(destination.index, 0, movedTask);
 
     const newProjectState = {
-        ...originalProject,
-        tasksByStatus: {
-            ...originalProject.tasksByStatus,
-            [sourceColumnId]: sourceTasks,
-            [destColumnId]: destTasks,
-        }
+      ...originalProject,
+      tasksByStatus: {
+        ...originalProject.tasksByStatus,
+        [sourceColumnId]: sourceTasks,
+        [destColumnId]: destTasks,
+      }
     };
-    
+
     setProject(newProjectState);
 
     try {
       await apiClient.put(`/projects/${projectId}/tasks/${draggableId}`, { status: destColumnId });
     } catch (err) {
-        toast.error("Failed to update task status. Reverting changes.");
-        setProject(originalProject);
+      toast.error("Failed to update task status. Reverting changes.");
+      setProject(originalProject);
     }
-   };
-  
- const handleTaskClick = async (taskSummary: TaskSummary) => {
+  };
+
+  const handleTaskClick = async (taskSummary: TaskSummary) => {
     try {
       toast.info("Loading task details...");
       const detailedTask = await apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`);
@@ -84,7 +84,7 @@ export default function ProjectPage() {
       toast.error("Failed to load task details.");
     }
   }
-  
+
   const handleOpenCreateTaskModal = (columnId: string) => {
     setDefaultStatusForCreate(columnId as 'todo' | 'in-progress' | 'review' | 'done');
     setIsCreateTaskModalOpen(true);
@@ -104,13 +104,13 @@ export default function ProjectPage() {
     }
   }, [searchParams, project, router, projectId]);
 
-   const handleCreateTask = async (formData: FormData) => {
+  const handleCreateTask = async (formData: FormData) => {
     setIsCreateTaskModalOpen(false);
     toast.info("Creating new task...");
 
     try {
       const newTask = await apiClient.post<TaskSummary>(`/projects/${projectId}/tasks`, formData);
-      
+
       toast.success(`Task "${newTask.title}" created!`);
 
       // Refresca toda la data del proyecto para que la UI esté 100% sincronizada.
@@ -132,9 +132,9 @@ export default function ProjectPage() {
         `/projects/${project.id}`,
         formData
       );
-      
+
       await refetch();
-      
+
       toast.success("Project updated successfully!");
       setIsEditModalOpen(false);
 
@@ -142,7 +142,7 @@ export default function ProjectPage() {
       toast.error((error as Error).message);
     }
   }
-  
+
   const handleDeleteProject = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
     toast.info("Deleting project...");
@@ -157,17 +157,17 @@ export default function ProjectPage() {
 
   if (isLoading) {
     return (
-        <AppLayout>
-            <div className="p-8 space-y-6">
-                <Skeleton className="h-12 w-1/3" />
-                <Skeleton className="h-8 w-2/3" />
-                <div className="flex gap-6 h-[calc(100vh-200px)]">
-                    <Skeleton className="w-96 h-full" />
-                    <Skeleton className="w-96 h-full" />
-                    <Skeleton className="w-96 h-full" />
-                </div>
-            </div>
-        </AppLayout>
+      <AppLayout>
+        <div className="p-8 space-y-6">
+          <Skeleton className="h-12 w-1/3" />
+          <Skeleton className="h-8 w-2/3" />
+          <div className="flex gap-6 h-[calc(100vh-200px)]">
+            <Skeleton className="w-96 h-full" />
+            <Skeleton className="w-96 h-full" />
+            <Skeleton className="w-96 h-full" />
+          </div>
+        </div>
+      </AppLayout>
     )
   }
 
@@ -183,8 +183,8 @@ export default function ProjectPage() {
     <>
       <AppLayout>
         <div className="space-y-6">
-          <ProjectHeader 
-            project={project!} 
+          <ProjectHeader
+            project={project!}
             onEdit={() => setIsEditModalOpen(true)}
             onInviteMembers={() => setIsInviteModalOpen(true)}
           />
@@ -202,9 +202,20 @@ export default function ProjectPage() {
         </div>
       </AppLayout>
 
-      {selectedTask && ( <TaskModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} task={selectedTask} onDataChange={refetch} /> )}
+      {selectedTask && ( 
+        <TaskModal 
+          isOpen={isTaskModalOpen} 
+          onClose={() => setIsTaskModalOpen(false)} 
+          task={selectedTask} 
+          onDataChange={refetch}
+          projectMembers={project.members}
+        /> 
+      )}
+
       <CreateTaskModal isOpen={isCreateTaskModalOpen} onClose={() => setIsCreateTaskModalOpen(false)} onSubmit={handleCreateTask} defaultStatus={defaultStatusForCreate} projectId={projectId} />
+
       {project && <EditProjectModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} onSubmit={handleEditProject} onDelete={handleDeleteProject} project={project} onDataChange={refetch} />}
+
       {project && <AddMemberModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} projectId={project.id} onInviteSent={refetch} currentMembers={project.members.map(m => m.id)} />}
     </>
   )

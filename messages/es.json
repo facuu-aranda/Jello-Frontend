@@ -1,0 +1,29 @@
+{
+  "LoginForm": {
+    "welcome": "¡Bienvenido de nuevo!",
+    "signInToContinue": "Inicia sesión para continuar en Jello",
+    "emailLabel": "Correo electrónico",
+    "passwordLabel": "Contraseña",
+    "rememberMe": "Recordarme",
+    "signInButton": "Iniciar sesión",
+    "signingInButton": "Iniciando sesión...",
+    "orContinueWith": "O continuar con",
+    "noAccount": "¿No tienes una cuenta?",
+    "signUpLink": "Regístrate"
+  },
+  "Sidebar": {
+    "dashboard": "Panel",
+    "search": "Buscar",
+    "projects": "Proyectos",
+    "myTasks": "Mis Tareas",
+    "todos": "Personales",
+    "createProject": "Crear Proyecto"
+  },
+  "Dashboard": {
+    "greeting": "¡Buenos días, {name}!",
+    "subtitle": "Esto es lo que está pasando hoy con tus proyectos.",
+    "newProject": "Nuevo Proyecto",
+    "recentProjects": "Proyectos Recientes",
+    "viewAllProjects": "Ver todos los proyectos"
+  }
+}

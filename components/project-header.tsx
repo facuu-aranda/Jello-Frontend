@@ -85,15 +85,17 @@ export function ProjectHeader({ project, onEdit, onInviteMembers }: ProjectHeade
         </div>
 
         {/* Right Side: Action Buttons */}
-        <div className="flex items-center gap-2 self-end md:self-auto">
-          <Button variant="outline" onClick={onInviteMembers}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Add People
-          </Button>
-          <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Project settings">
-            <Settings className="w-5 h-5" />
-          </Button>
-        </div>
+        {project.isOwner && (
+          <div className="flex items-center gap-2 self-end md:self-auto">
+            <Button variant="outline" onClick={onInviteMembers}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Add People
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Project settings">
+              <Settings className="w-5 h-5" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

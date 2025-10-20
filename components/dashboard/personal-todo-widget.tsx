@@ -6,7 +6,6 @@ import { Plus, Check, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-// --- NUEVO: Imports necesarios ---
 import { useApi } from "@/hooks/useApi"
 import { Todo } from "@/types"
 import { apiClient } from "@/lib/api"
@@ -14,7 +13,6 @@ import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function PersonalTodoWidget() {
-  // --- MODIFICADO: Usamos useApi para obtener los todos ---
   const { data: todos, isLoading, refetch } = useApi<Todo[]>('/todos');
 
   // --- Mantenemos estados locales solo para la UI ---
@@ -97,7 +95,7 @@ export function PersonalTodoWidget() {
           ) : (
             todos?.map((todo) => (
               <motion.div
-                key={todo.id}
+                key={todo._id}
                 layout
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -106,7 +104,7 @@ export function PersonalTodoWidget() {
               >
                 <Checkbox 
                   checked={todo.completed} 
-                  onCheckedChange={(checked) => toggleTodo(todo.id, !!checked)} 
+                  onCheckedChange={(checked) => toggleTodo(todo._id, !!checked)} 
                 />
                 <span className={`flex-1 text-sm truncate ${todo.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
                   {todo.text}
@@ -114,7 +112,7 @@ export function PersonalTodoWidget() {
                 <Button 
                   variant="ghost" size="icon" 
                   className="w-6 h-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity" 
-                  onClick={() => deleteTodo(todo.id)}
+                  onClick={() => deleteTodo(todo._id)}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>

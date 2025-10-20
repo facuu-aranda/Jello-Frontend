@@ -158,7 +158,7 @@ const handleLabelDelete = (id: string) => {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto pr-2 -mr-6 pl-6">
+          <div className="flex-1 overflow-y-auto px-2">
             <form id="edit-project-form" onSubmit={handleSaveChanges} className="space-y-4 py-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Project Name</label>
@@ -195,7 +195,7 @@ const handleLabelDelete = (id: string) => {
     />
 </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
                 <div className="space-y-2">
                   <ImageUploadField 
                       label="Project Image" 
