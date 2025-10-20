@@ -1,17 +1,19 @@
-// app/verify-email/page.tsx
-"use client";
-
-import { useEffect } from 'react';
+// 1. Importa Suspense y saca el Spinner del return
+import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 import { Spinner } from '@/components/ui/spinner';
+import * as React from 'react'; // Asegúrate de que React esté importado
 
-export default function VerifyEmailPage() {
+// 2. Mueve toda la lógica a un nuevo componente "use client"
+"use client";
+function VerifyEmailClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const token = searchParams.get('token');
 
-  useEffect(() => {
+  React.useEffect(() => {
+    const token = searchParams.get('token');
+
     if (!token) {
       router.push('/verification-failed');
       return;
@@ -19,27 +21,37 @@ export default function VerifyEmailPage() {
 
     const verifyToken = async () => {
       try {
-        // El backend maneja la lógica y redirige en caso de éxito o fallo.
-        // Hacemos la petición y esperamos la redirección implícita del navegador.
         await apiClient.get(`/auth/verify/${token}`);
-        
-        // Si la petición se completa sin redirección (caso poco probable),
-        // asumimos éxito y redirigimos manualmente.
         router.push('/verification-success');
-
       } catch (error) {
-        // Si la API devuelve un error (p. ej. 400), redirigimos a la página de fallo.
         router.push('/verification-failed');
       }
     };
 
     verifyToken();
-  }, [token, router]);
+  }, [searchParams, router]); // 'token' ya está cubierto por searchParams
 
+  // 3. Este componente cliente renderiza el Spinner
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
       <Spinner size="lg" />
       <p className="mt-4 text-muted-foreground">Verificando tu cuenta...</p>
     </div>
+  );
+}
+
+// 4. La página principal (Server Component) envuelve al cliente en Suspense
+export default function VerifyEmailPage() {
+  const fallbackUI = (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+      <Spinner size="lg" />
+      <p className="mt-4 text-muted-foreground">Verificando tu cuenta...</p>
+    </div>
+  );
+
+  return (
+    <Suspense fallback={fallbackUI}>
+      <VerifyEmailClient />
+    </Suspense>
   );
 }

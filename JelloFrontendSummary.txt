@@ -523,7 +523,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Plus } from "lucide-react"
 import { TaskModal } from "@/components/tasks/task-modal"
 import { useApi } from "@/hooks/useApi"
-import { ProjectSummary, TaskDetails } from "@/types"
+import { ProjectSummary, TaskDetails, ProjectDetails as ProjectDetailsType, UserSummary } from "@/types"
 import { useAuth } from "@/contexts/auth-context"
 import { apiClient } from "@/lib/api"
 import { toast } from "sonner"
@@ -531,19 +531,36 @@ import { toast } from "sonner"
 export default function DashboardPage() {
   const { user } = useAuth();
   const { data: recentProjects, isLoading: isLoadingProjects, refetch: refetchProjects } = useApi<ProjectSummary[]>('/projects?limit=3');
-  const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
+   const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
+  const [projectMembersForTask, setProjectMembersForTask] = React.useState<UserSummary[]>([]);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
-  const handleTaskView = async (taskSummary: any) => {
+
+const handleTaskView = async (taskSummary: any) => {
     try {
       toast.info("Loading task details...");
-      const taskDetails = await apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`);
+      
+      // Hacemos ambas peticiones en paralelo para más eficiencia
+      const [taskDetails, projectDetails] = await Promise.all([
+        apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`),
+        apiClient.get<ProjectDetailsType>(`/projects/${taskSummary.projectId}`)
+      ]);
+      
       setSelectedTask(taskDetails);
+      setProjectMembersForTask(projectDetails.members); // Guardamos los miembros
       setIsModalOpen(true);
+      
       toast.dismiss();
     } catch (error) {
       toast.error("Failed to load task details.");
+      toast.dismiss();
     }
+  }
+  
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedTask(null);
+    setProjectMembersForTask([]);
   }
 
   return (
@@ -567,7 +584,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            <AssignedTasksWidget />
+            <AssignedTasksWidget onTaskClick={handleTaskView} />
             <PersonalTodoWidget />
             <RecentActivityWidget />
           </div>
@@ -594,11 +611,12 @@ export default function DashboardPage() {
         </div>
       </AppLayout>
 
-      <TaskModal
+       <TaskModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleModalClose}
         task={selectedTask}
         onDataChange={refetchProjects}
+        projectMembers={projectMembersForTask}
         showGoToProjectButton={true}
       />
     </>
@@ -2940,7 +2958,8 @@ import { Button } from "@/components/ui/button"
 import { Search, ArrowRight, AlertTriangle } from "lucide-react"
 import { TaskModal } from "@/components/tasks/task-modal"
 import { cn } from "@/lib/utils"
-import { TaskDetails, TaskSummary } from "@/types"
+// --- CAMBIO: Se importan ProjectDetails y UserSummary ---
+import { TaskDetails, TaskSummary, ProjectDetails as ProjectDetailsType, UserSummary } from "@/types"
 import { useApi } from "@/hooks/useApi"
 import { apiClient } from "@/lib/api"
 import { toast } from "sonner"
@@ -2955,13 +2974,16 @@ const statusConfig: { [key: string]: { color: string; label: string } } = {
 };
 
 export default function MyTasksPage() {
-    // --- MODIFICADO: Estado para filtros y datos de la API ---
     const [searchQuery, setSearchQuery] = React.useState("");
     const [statusFilter, setStatusFilter] = React.useState<keyof typeof statusConfig>("all");
     const { data: tasks, isLoading, error, refetch } = useApi<TaskSummary[]>(`/tasks/my-tasks`);
+    
+    // --- CAMBIO: Estados para manejar los datos del modal ---
     const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
+    const [projectMembersForTask, setProjectMembersForTask] = React.useState<UserSummary[]>([]);
+    const [isModalOpen, setIsModalOpen] = React.useState(false);
 
-    // --- MODIFICADO: Lógica de filtrado en el frontend ---
+
     const filteredTasks = React.useMemo(() => {
         return tasks?.filter((task) => {
             const matchesStatus = statusFilter === "all" || task.status === statusFilter;
@@ -2977,17 +2999,32 @@ export default function MyTasksPage() {
         done: tasks?.filter((t) => t.status === "done").length || 0,
     }), [tasks]);
 
-    // --- NUEVO: Función para abrir el modal con detalles de la tarea ---
+    // --- CAMBIO: La función ahora es async y busca los miembros del proyecto ---
     const handleTaskView = async (taskSummary: TaskSummary) => {
         try {
             toast.info("Loading task details...");
-            const taskDetails = await apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`);
+            
+            const [taskDetails, projectDetails] = await Promise.all([
+              apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`),
+              apiClient.get<ProjectDetailsType>(`/projects/${taskSummary.projectId}`)
+            ]);
+            
             setSelectedTask(taskDetails);
+            setProjectMembersForTask(projectDetails.members);
+            setIsModalOpen(true);
+            
             toast.dismiss();
         } catch (err) {
             toast.error("Failed to load task details.");
+            toast.dismiss();
         }
     };
+
+    const handleModalClose = () => {
+      setIsModalOpen(false);
+      setSelectedTask(null);
+      setProjectMembersForTask([]);
+    }
     
     const StatCard = ({ status, count }: { status: keyof typeof tasksByStatus | 'all'; count: number }) => {
         const config = statusConfig[status];
@@ -3028,7 +3065,6 @@ export default function MyTasksPage() {
                         <Input placeholder="Search tasks..." className="pl-12 h-11" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </div>
                     
-                    {/* --- MODIFICADO: Manejo de estados de carga y error --- */}
                     {isLoading ? (
                         <div className="space-y-4">
                             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}
@@ -3072,16 +3108,19 @@ export default function MyTasksPage() {
                 </div>
             </AppLayout>
 
+            {/* --- CAMBIO: Pasamos la prop `projectMembers` al modal --- */}
             <TaskModal
-                isOpen={!!selectedTask}
-                onClose={() => setSelectedTask(null)}
+                isOpen={isModalOpen}
+                onClose={handleModalClose}
                 task={selectedTask}
                 onDataChange={refetch}
+                projectMembers={projectMembersForTask}
                 showGoToProjectButton={true}
             />
         </>
     )
 }
+
 
 ############################## FIN DEL ARCHIVO: app\tasks\page.tsx ##################################
 
@@ -3670,11 +3709,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useApi } from "@/hooks/useApi"
-import { TaskSummary, TaskDetails } from "@/types"
+import { TaskSummary } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
-import { TaskModal } from "@/components/tasks/task-modal"
-import { apiClient } from "@/lib/api"
-import { toast } from "sonner"
 
 const priorityConfig = {
   low: { color: "bg-green-500", variant: "secondary" as const },
@@ -3683,95 +3719,77 @@ const priorityConfig = {
   critical: { color: "bg-red-500", variant: "destructive" as const },
 }
 
-export function AssignedTasksWidget() {
-  const { data: tasks, isLoading, refetch } = useApi<TaskSummary[]>('/tasks/my-tasks?limit=3');
-  const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
+// --- CAMBIO: Se añade la prop onTaskClick ---
+interface AssignedTasksWidgetProps {
+  onTaskClick: (task: TaskSummary) => void;
+}
 
-  const handleTaskView = async (taskSummary: TaskSummary) => {
-    try {
-      toast.info("Loading task details...");
-      const taskDetails = await apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`);
-      setSelectedTask(taskDetails);
-      setIsModalOpen(true);
-      toast.dismiss();
-    } catch (error) {
-      toast.error("Failed to load task details.");
-    }
-  }
+export function AssignedTasksWidget({ onTaskClick }: AssignedTasksWidgetProps) {
+  const { data: tasks, isLoading } = useApi<TaskSummary[]>('/tasks/my-tasks?limit=3');
 
   return (
-    <>
-      <motion.div
-        className="glass-card p-6 space-y-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h3 className="text-lg font-semibold text-foreground">My Tasks</h3>
-            <p className="text-sm text-muted-foreground">Tasks assigned to you across all projects</p>
-          </div>
-          <Button variant="ghost" size="sm" asChild>
-             <Link href="/tasks">View all</Link>
-          </Button>
+    <motion.div
+      className="glass-card p-6 space-y-6"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+    >
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold text-foreground">My Tasks</h3>
+          <p className="text-sm text-muted-foreground">Tasks assigned to you across all projects</p>
         </div>
+        <Button variant="ghost" size="sm" asChild>
+           <Link href="/tasks">View all</Link>
+        </Button>
+      </div>
 
-        <div className="space-y-4">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-16 w-full rounded-xl" />)
-          ) : (
-            tasks?.map((task, index) => (
-              <motion.div
-                key={task.id}
-                className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
-                initial={{ opacity: 0}}
-                animate={{ opacity: 1}}
-                transition={{ delay: index * 0.1 }}
-                onClick={() => handleTaskView(task)}
-              >
-                <div
-                  className={`w-3 h-3 rounded-full flex-shrink-0 ${priorityConfig[task.priority as keyof typeof priorityConfig].color}`}
-                />
-                {/* --- MODIFICADO: Se añade 'min-w-0' para permitir el truncado --- */}
-                <div className="flex-1 space-y-1 min-w-0">
-                  {/* --- MODIFICADO: Se añade la clase 'truncate' al título --- */}
-                  <h4 className="font-medium text-foreground truncate">{task.title}</h4>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="truncate">{task.projectId}</span>
-                  </div>
+      <div className="space-y-4">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-16 w-full rounded-xl" />)
+        ) : (
+          tasks?.map((task, index) => (
+            <motion.div
+              key={task.id}
+              className="flex items-center gap-4 p-3 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
+              initial={{ opacity: 0}}
+              animate={{ opacity: 1}}
+              transition={{ delay: index * 0.1 }}
+              // --- CAMBIO: Se usa la prop onTaskClick ---
+              onClick={() => onTaskClick(task)}
+            >
+              <div
+                className={`w-3 h-3 rounded-full flex-shrink-0 ${priorityConfig[task.priority as keyof typeof priorityConfig].color}`}
+              />
+              <div className="flex-1 space-y-1 min-w-0">
+                <h4 className="font-medium text-foreground truncate">{task.title}</h4>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {/* --- CORRECCIÓN: Usamos el nombre del proyecto, no el ID --- */}
+                  <span className="truncate">{task.projectId}</span>
                 </div>
-                <div className="flex gap-3 items-center text-xs text-muted-foreground">
-                    {task.dueDate && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{new Date(task.dueDate).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                    <Badge
-                      variant={priorityConfig[task.priority as keyof typeof priorityConfig].variant}
-                      className="capitalize"
-                    >
-                      {task.priority}
-                    </Badge>
-                </div>
-              </motion.div>
-            ))
-          )}
-        </div>
-      </motion.div>
-
-      <TaskModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        task={selectedTask}
-        onDataChange={refetch}
-        showGoToProjectButton={true}
-      />
-    </>
+              </div>
+              <div className="flex gap-3 items-center text-xs text-muted-foreground">
+                  {task.dueDate && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                  <Badge
+                    variant={priorityConfig[task.priority as keyof typeof priorityConfig].variant}
+                    className="capitalize"
+                  >
+                    {task.priority}
+                  </Badge>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+    </motion.div>
   )
 }
+
 
 ############################## FIN DEL ARCHIVO: components\dashboard\assigned-tasks-widget.tsx ##################################
 
@@ -5455,10 +5473,21 @@ interface PublicLayoutProps {
 }
 
 export function PublicLayout({ children }: PublicLayoutProps) {
+  // --- CAMBIO: Se añade el estado y las funciones para manejar los modales ---
   const [isLoginModalOpen, setIsLoginModalOpen] = React.useState(false)
   const [isRegisterModalOpen, setIsRegisterModalOpen] = React.useState(false)
 
-  // Definimos los enlaces de navegación para reutilizarlos
+  const switchToRegister = () => {
+    setIsLoginModalOpen(false);
+    setIsRegisterModalOpen(true);
+  };
+
+  const switchToLogin = () => {
+    setIsRegisterModalOpen(false);
+    setIsLoginModalOpen(true);
+  };
+  // --- FIN DEL CAMBIO ---
+
   const navLinks = (
     <>
       <Link href="#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -5513,7 +5542,6 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                         <span className="sr-only">Toggle Menu</span>
                       </Button>
                     </SheetTrigger>
-                    {/* 👇 --- CONTENIDO DEL MENÚ MÓVIL RE-DISEÑADO --- 👇 */}
                     <SheetContent side="right" className=" bg-card/80 backdrop-blur-lg border-none p-0 flex flex-col">
                       <div className="p-4 border-b border-border/50">
                         <Link href="/" className="flex items-center gap-3">
@@ -5548,12 +5576,10 @@ export function PublicLayout({ children }: PublicLayoutProps) {
 
         <main className="relative z-10">{children}</main>
 
-        {/* Footer */}
         <footer className="relative z-10 mt-20">
           <div className="glass-card mx-4 mb-4 rounded-2xl">
             <div className="container mx-auto px-6 py-8">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                {/* Brand */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="w-6 h-6">
@@ -5566,74 +5592,31 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                     Your intelligent productivity ecosystem that adapts to you.
                   </p>
                 </div>
-
-                {/* Product */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-foreground">Product</h3>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li>
-                      <Link href="#features" className="hover:text-foreground transition-colors">
-                        Features
-                      </Link>
-                    </li>
-                    <li>
-                      <Link href="#pricing" className="hover:text-foreground transition-colors">
-                        Pricing
-                      </Link>
-                    </li>
-                    <li>
-                      <Link href="#integrations" className="hover:text-foreground transition-colors">
-                        Integrations
-                      </Link>
-                    </li>
+                    <li><Link href="#features" className="hover:text-foreground transition-colors">Features</Link></li>
+                    <li><Link href="#pricing" className="hover:text-foreground transition-colors">Pricing</Link></li>
+                    <li><Link href="#integrations" className="hover:text-foreground transition-colors">Integrations</Link></li>
                   </ul>
                 </div>
-
-                {/* Company */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-foreground">Company</h3>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li>
-                      <Link href="#about" className="hover:text-foreground transition-colors">
-                        About
-                      </Link>
-                    </li>
-                    <li>
-                      <Link href="#blog" className="hover:text-foreground transition-colors">
-                        Blog
-                      </Link>
-                    </li>
-                    <li>
-                      <Link href="#careers" className="hover:text-foreground transition-colors">
-                        Careers
-                      </Link>
-                    </li>
+                    <li><Link href="#about" className="hover:text-foreground transition-colors">About</Link></li>
+                    <li><Link href="#blog" className="hover:text-foreground transition-colors">Blog</Link></li>
+                    <li><Link href="#careers" className="hover:text-foreground transition-colors">Careers</Link></li>
                   </ul>
                 </div>
-
-                {/* Support */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-foreground">Support</h3>
                   <ul className="space-y-2 text-sm text-muted-foreground">
-                    <li>
-                      <Link href="#help" className="hover:text-foreground transition-colors">
-                        Help Center
-                      </Link>
-                    </li>
-                    <li>
-                      <Link href="#contact" className="hover:text-foreground transition-colors">
-                        Contact
-                      </Link>
-                    </li>
-                    <li>
-                      <Link href="#privacy" className="hover:text-foreground transition-colors">
-                        Privacy
-                      </Link>
-                    </li>
+                    <li><Link href="#help" className="hover:text-foreground transition-colors">Help Center</Link></li>
+                    <li><Link href="#contact" className="hover:text-foreground transition-colors">Contact</Link></li>
+                    <li><Link href="#privacy" className="hover:text-foreground transition-colors">Privacy</Link></li>
                   </ul>
                 </div>
               </div>
-
               <div className="border-t border-border mt-8 pt-8 text-center">
                 <p className="text-sm text-muted-foreground">© 2024 Jello. All rights reserved.</p>
               </div>
@@ -5642,21 +5625,21 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         </footer>
       </div>
 
-      {/* Modals */}
       <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
         <DialogContent className="p-0 border-none bg-transparent w-[90vw] max-w-md">
-          <LoginForm />
+          <LoginForm onSwitchToRegister={switchToRegister} />
         </DialogContent>
       </Dialog>
 
       <Dialog open={isRegisterModalOpen} onOpenChange={setIsRegisterModalOpen}>
         <DialogContent className="p-0 border-none bg-transparent w-[90vw] max-w-md">
-          <RegisterForm />
+          <RegisterForm onSwitchToLogin={switchToLogin} />
         </DialogContent>
       </Dialog>
     </>
   )
 }
+
 
 ############################## FIN DEL ARCHIVO: components\layout\public-layout.tsx ##################################
 
