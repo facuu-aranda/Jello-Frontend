@@ -1,3 +1,5 @@
+// app/verify-email/page.tsx
+
 // 1. Importa Suspense y saca el Spinner del return
 import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -40,6 +42,7 @@ function VerifyEmailClient() {
   );
 }
 
+// 4. La página principal (Server Component) envuelve al cliente en Suspense
 export default function VerifyEmailPage() {
   const fallbackUI = (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">

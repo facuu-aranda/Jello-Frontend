@@ -1,3 +1,5 @@
+// app/auth/callback/page.tsx
+
 // 1. Importa Suspense y saca el Spinner del return
 import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
