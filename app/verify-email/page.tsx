@@ -40,7 +40,6 @@ function VerifyEmailClient() {
   );
 }
 
-// 4. La página principal (Server Component) envuelve al cliente en Suspense
 export default function VerifyEmailPage() {
   const fallbackUI = (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
