@@ -178,3 +178,13 @@ export interface Notification {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface ApiError extends Error {
+  response?: {
+    status: number;
+    data: {
+      error: string;
+      message?: string; // Aseguramos que también pueda tener 'message'
+    };
+  };
+}

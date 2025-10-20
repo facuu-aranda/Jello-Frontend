@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
+// --- 1. IMPORTACIONES REQUERIDAS ---
 import {
     ArrowRight,
     Menu,
@@ -19,7 +20,16 @@ import {
     Lightbulb,
     MessageSquare,
     Check,
+    Bell, // Icono importado
+    Sun,  // Icono para ThemeToggle
+    Moon, // Icono para ThemeToggle
 } from "lucide-react";
+
+import { useAuth } from "@/contexts/auth-context"; // Hook de autenticación
+import { useTheme } from "@/contexts/theme-context"; // Hook para el tema
+import { Spinner } from "@/components/ui/spinner"; // Componente de carga
+import { UserMenu } from "@/components/user-menu"; // Menú de usuario
+import { UserProfile, TaskSummary } from "@/types"; // Tipos de la aplicación
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -30,56 +40,158 @@ import { AnimatedBackground } from "@/components/animated-background";
 import { LoginForm } from "@/components/login-form";
 import { RegisterForm } from "@/components/register-form";
 import { TaskCard as FloatingTaskCard } from "@/components/tasks/task-card";
-import { TaskSummary } from "@/types";
+
+// --- 2. COMPONENTE PLACEHOLDER PARA NOTIFICACIONES ---
+const NotificationsPlaceholder = () => (
+    <Button variant="ghost" size="icon" asChild>
+        <Link href="/notifications">
+            <Bell className="h-5 w-5" />
+        </Link>
+    </Button>
+);
+
+// --- Componente para el cambio de tema (ThemeToggle) ---
+// Replicando la funcionalidad de UserMenu como solicitaste.
+const ThemeToggle = () => {
+    const { theme, toggleTheme } = useTheme();
+    return (
+        <Button variant="ghost" size="icon" onClick={toggleTheme}>
+            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+        </Button>
+    );
+};
+
+
+// --- VISTA PARA EL USUARIO AUTENTICADO ---
+const LoggedInView = ({ user }: { user: UserProfile }) => (
+    <div className="flex flex-col min-h-screen w-full bg-background text-foreground">
+        <header className="sticky top-0 z-50 p-4 border-b bg-card/80 backdrop-blur-lg">
+            <div className="container mx-auto flex items-center justify-between">
+                <Link href="/" className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8"><AvatarImage src="/images/jelli-avatar.png" alt="Jello Logo" /><AvatarFallback>J</AvatarFallback></Avatar>
+                    <span className="text-xl font-bold">Jello</span>
+                </Link>
+                <div className="flex items-center gap-4">
+                    <Button asChild>
+                        <Link href="/dashboard">Ir al Dashboard</Link>
+                    </Button>
+                    <NotificationsPlaceholder />
+                    <UserMenu /> {/* El UserMenu ya tiene el user desde el contexto */}
+                </div>
+            </div>
+        </header>
+        <main className="flex-grow flex items-center justify-center text-center p-4">
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7 }}
+            >
+                <h1 className="text-4xl sm:text-5xl font-bold">
+                    ¡Bienvenido de nuevo, {user.name}!
+                </h1>
+                <p className="mt-4 text-lg text-muted-foreground">
+                    Todo listo para que continúes donde lo dejaste.
+                </p>
+                <Button size="lg" className="mt-8 group" asChild>
+                    <Link href="/dashboard">
+                        Vamos al Dashboard
+                        <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                </Button>
+            </motion.div>
+        </main>
+    </div>
+);
+
 
 // --- Componente Principal de la Landing Page ---
 export default function FinalStyledLandingPage() {
+    // --- 3. LÓGICA DE ESTADO PRINCIPAL ---
+    const { user, isLoading } = useAuth();
     const [isLoginModalOpen, setIsLoginModalOpen] = React.useState(false);
     const [isRegisterModalOpen, setIsRegisterModalOpen] = React.useState(false);
 
+    // --- Funciones para intercambiar modales ---
+    const switchToRegister = () => {
+        setIsLoginModalOpen(false);
+        setIsRegisterModalOpen(true);
+    };
+
+    const switchToLogin = () => {
+        setIsRegisterModalOpen(false);
+        setIsLoginModalOpen(true);
+    };
+
+
+    // --- 3.1. ESTADO DE CARGA ---
+    if (isLoading) {
+        return (
+            <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
+                <Spinner size="lg" />
+                <p className="mt-4 text-lg text-muted-foreground">Verificando sesión...</p>
+            </div>
+        );
+    }
+
+    // --- 3.2. ESTADO LOGUEADO ---
+    if (user) {
+        return <LoggedInView user={user} />;
+    }
+
+    // --- 3.3. ESTADO DESLOGUEADO (Landing Page Original) ---
     return (
         <>
             <div className="relative flex min-h-screen w-full flex-col bg-background text-foreground overflow-x-hidden">
                 <AnimatedBackground />
 
-                <Navbar onLogin={() => setIsLoginModalOpen(true)} onRegister={() => setIsRegisterModalOpen(true)} />
+                {/* --- 4. GESTIÓN CENTRALIZADA DE MODALES --- */}
+                <Navbar onLoginClick={() => setIsLoginModalOpen(true)} onRegisterClick={() => setIsRegisterModalOpen(true)} />
 
                 <main className="relative z-10 flex-grow">
-                    <HeroSection onRegister={() => setIsRegisterModalOpen(true)} />
+                    <HeroSection onRegisterClick={() => setIsRegisterModalOpen(true)} />
                     <DetailedFeaturesSection />
-                    <PricingSection onRegister={() => setIsRegisterModalOpen(true)} />
-                    <TestimonialsSection onRegister={() => setIsRegisterModalOpen(true)}  />
-                    <CtaSection onRegister={() => setIsRegisterModalOpen(true)} />
+                    <PricingSection onRegisterClick={() => setIsRegisterModalOpen(true)} />
+                    <TestimonialsSection />
+                    <CtaSection onRegisterClick={() => setIsRegisterModalOpen(true)} />
                 </main>
 
                 <Footer />
             </div>
 
-            {/* Modales de Autenticación */}
+            {/* --- 5. HABILITAR INTERCAMBIO ENTRE MODALES --- */}
             <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
                 <DialogContent className="p-0 border-none bg-transparent w-[90vw] max-w-md">
-                    <LoginForm />
+                    <LoginForm onSwitchToRegister={switchToRegister} />
                 </DialogContent>
             </Dialog>
 
             <Dialog open={isRegisterModalOpen} onOpenChange={setIsRegisterModalOpen}>
                 <DialogContent className="p-0 border-none bg-transparent w-[90vw] max-w-md">
-                    <RegisterForm />
+                    <RegisterForm onSwitchToLogin={switchToLogin} />
                 </DialogContent>
             </Dialog>
         </>
     );
 }
 
-// --- SUBCOMPONENTES DE LA PÁGINA ---
+// --- SUBCOMPONENTES DE LA PÁGINA (MODIFICADOS PARA RECIBIR PROPS) ---
 
-const Navbar = ({ onLogin, onRegister }: { onLogin: () => void; onRegister: () => void; }) => {
+// --- Navbar Modificado ---
+const Navbar = ({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; onRegisterClick: () => void; }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
     const navLinks = [
         { name: "Características", href: "#features" },
         { name: "Precios", href: "#pricing" },
         { name: "Testimonios", href: "#testimonials" },
     ];
+
+    const handleLinkClick = (callback: () => void) => {
+        setIsMobileMenuOpen(false);
+        callback();
+    };
+    
     const NavItems = () => (
         <>
             {navLinks.map((link) => (
@@ -98,8 +210,9 @@ const Navbar = ({ onLogin, onRegister }: { onLogin: () => void; onRegister: () =
                 </Link>
                 <nav className="hidden md:flex items-center gap-6"><NavItems /></nav>
                 <div className="hidden md:flex items-center gap-2">
-                    <Button variant="ghost" onClick={onLogin}>Sign In</Button>
-                    <Button onClick={onRegister}>Get Started</Button>
+                    <ThemeToggle /> {/* ThemeToggle añadido */}
+                    <Button variant="ghost" onClick={onLoginClick}>Sign In</Button>
+                    <Button onClick={onRegisterClick}>Get Started</Button>
                 </div>
                 <div className="md:hidden">
                     <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -108,8 +221,11 @@ const Navbar = ({ onLogin, onRegister }: { onLogin: () => void; onRegister: () =
                             <nav className="flex flex-col gap-6 pt-10">
                                 <NavItems />
                                 <div className="border-t border-border pt-6 flex flex-col gap-4">
-                                    <Button variant="outline" onClick={onLogin}>Sign In</Button>
-                                    <Button onClick={onRegister}>Get Started</Button>
+                                    <Button variant="outline" onClick={() => handleLinkClick(onLoginClick)}>Sign In</Button>
+                                    <Button onClick={() => handleLinkClick(onRegisterClick)}>Get Started</Button>
+                                    <div className="self-center">
+                                        <ThemeToggle /> {/* ThemeToggle añadido al menú móvil */}
+                                    </div>
                                 </div>
                             </nav>
                         </SheetContent>
@@ -120,7 +236,8 @@ const Navbar = ({ onLogin, onRegister }: { onLogin: () => void; onRegister: () =
     );
 };
 
-const HeroSection = ({ onRegister }: { onRegister: () => void; }) => {
+// --- HeroSection Modificado ---
+const HeroSection = ({ onRegisterClick }: { onRegisterClick: () => void; }) => {
     const mockTasks: TaskSummary[] = [
         { id: '1', title: 'Plan de Marketing para Lanzamiento', priority: 'high', labels: [{ _id: 'l1', name: 'Marketing', color: '#ec4899' }], assignees: [{ id: 'u1', name: 'S', avatarUrl: '/sarah-avatar.png' }], subtasks: { total: 5, completed: 2 }, status: 'in-progress', dueDate: '2025-11-15', commentCount: 3, attachmentCount: 1, projectId: 'p1' },
         { id: '2', title: 'Investigación de Mercado para App Móvil', priority: 'medium', labels: [{ _id: 'l2', name: 'Investigación', color: '#8b5cf6' }], assignees: [{ id: 'u2', name: 'M', avatarUrl: '/mike-avatar.jpg' }], subtasks: { total: 3, completed: 3 }, status: 'done', dueDate: '2025-10-30', commentCount: 8, attachmentCount: 2, projectId: 'p1' },
@@ -137,7 +254,7 @@ const HeroSection = ({ onRegister }: { onRegister: () => void; }) => {
                         Jello es la plataforma flexible que une a personas y proyectos. Busca talento, explora iniciativas de código abierto o gestiona tu próximo gran producto en un solo lugar.
                     </p>
                     <div className="mt-10 flex flex-col sm:flex-row justify-center items-center gap-4">
-                        <Button size="lg" className="group text-lg py-7 px-8 w-full sm:w-auto" onClick={onRegister}>
+                        <Button size="lg" className="group text-lg py-7 px-8 w-full sm:w-auto" onClick={onRegisterClick}>
                             Empieza Gratis
                             <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                         </Button>
@@ -153,11 +270,13 @@ const HeroSection = ({ onRegister }: { onRegister: () => void; }) => {
     );
 };
 
+// --- El resto de los componentes de la landing no necesitan cambios, pero los incluyo por completitud ---
+
 const DetailedFeaturesSection = () => {
     const mainFeatures = [
-        { icon: ClipboardList, title: "Gestión de Proyectos Intuitiva", description: "Organiza, planifica y ejecuta tus proyectos con tableros Kanban dinámicos y herramientas visuales.", image: "/images/kanban-preview.png", points: ["Tableros Kanban personalizables", "Gestión de tareas y subtareas", "Fechas de entrega y recordatorios"] },
-        { icon: Lightbulb, title: "Asistente con IA: Jelli", description: "Aprovecha la inteligencia artificial para automatizar tareas, obtener resúmenes y generar ideas.", image: "/images/jelli-avatar.png", points: ["Generación automática de tareas", "Resúmenes inteligentes de debates", "Sugerencias proactivas"] },
-        { icon: MessageSquare, title: "Colaboración y Comunicación", description: "Mantén a tu equipo conectado con comentarios en tiempo real, menciones y un historial de actividad completo.", image: "/images/image_5c4f9d.jpg", points: ["Comentarios directos en tareas", "Menciones a compañeros de equipo", "Historial de actividad centralizado"] },
+        { icon: ClipboardList, title: "Gestión de Proyectos Intuitiva", description: "Organiza, planifica y ejecuta tus proyectos con tableros Kanban dinámicos y herramientas visuales.", image: "/images/JelliKanban2.gif", points: ["Tableros Kanban personalizables", "Gestión de tareas y subtareas", "Fechas de entrega y recordatorios"] },
+        { icon: Lightbulb, title: "Asistente con IA: Jelli", description: "Aprovecha la inteligencia artificial para automatizar tareas, obtener resúmenes y generar ideas.", image: "/images/JelliClear2.gif", points: ["Generación automática de tareas", "Resúmenes inteligentes de debates", "Sugerencias proactivas"] },
+        { icon: MessageSquare, title: "Colaboración y Comunicación", description: "Mantén a tu equipo conectado con comentarios en tiempo real, menciones y un historial de actividad completo.", image: "/images/JelliConstructor2.gif", points: ["Comentarios directos en tareas", "Menciones a compañeros de equipo", "Historial de actividad centralizado"] },
     ];
     const platformFeatures = [
         { icon: FolderSearch, title: "Descubre Proyectos", description: "Explora proyectos públicos y open-source. ¡Encuentra tu próxima gran contribución!" },
@@ -179,9 +298,9 @@ const DetailedFeaturesSection = () => {
 
                 <div className="space-y-20">
                     {mainFeatures.map((feature, index) => (
-                        <motion.div key={feature.title} className={`flex flex-col md:flex-row items-center gap-12 lg:gap-24 ${index % 2 === 1 ? "md:flex-row-reverse" : ""}`} initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.8, ease: "easeOut" }}>
+                        <motion.div key={feature.title} className={`bg-card/72 p-8 rounded-4xl flex flex-col md:flex-row items-center gap-12 lg:gap-24 ${index % 2 === 1 ? "md:flex-row-reverse" : ""}`} initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.8, ease: "easeOut" }}>
                             <div className="w-full md:w-1/2">
-                                <motion.div className="relative w-full aspect-video rounded-3xl overflow-hidden glass-card p-4 shadow-xl border border-border/50 flex items-center justify-center">
+                                <motion.div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-card/60  shadow-xl border border-border/50 flex items-center justify-center opacity-55 ">
                                     <Image src={feature.image} alt={feature.title} width={600} height={338} className="object-cover rounded-2xl" />
                                 </motion.div>
                             </div>
@@ -202,7 +321,6 @@ const DetailedFeaturesSection = () => {
                          <h2 className="text-4xl font-bold">Una Plataforma, Infinitas Posibilidades</h2>
                          <p className="text-lg text-card-foreground max-w-3xl mx-auto">Jello está diseñado para ser tan flexible como tus proyectos. No importa si es privado, público o para una causa social.</p>
                     </div>
-                    {/* --- INICIO DE CAMBIOS DE ESTILO --- */}
                     <div className="grid md:grid-cols-3 gap-8 mb-12">
                         {platformFeatures.map((feature, index) => (
                              <motion.div key={feature.title} initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.6, delay: index * 0.1 }}>
@@ -220,15 +338,13 @@ const DetailedFeaturesSection = () => {
                             </motion.div>
                         ))}
                     </div>
-                     
-                    {/* --- FIN DE CAMBIOS DE ESTILO --- */}
                 </div>
             </div>
         </section>
     );
 };
 
-const PricingSection = ({ onRegister }: { onRegister: () => void; }) => {
+const PricingSection = ({ onRegisterClick }: { onRegisterClick: () => void; }) => {
     const tiers = [
         { name: "Gratis", price: "0", period: "/mes", description: "Perfecto para individuos y equipos pequeños.", features: ["3 Proyectos", "Búsqueda de Proyectos Públicos", "Acceso Básico a Jelli AI"], cta: "Comienza Gratis", popular: false },
         { name: "Pro", price: "15", period: "/mes/usuario", description: "Para equipos en crecimiento que necesitan más.", features: ["Proyectos Ilimitados", "Búsqueda Avanzada de Talento", "Acceso Completo a Jelli AI", "Soporte prioritario"], cta: "Prueba Pro Gratis", popular: true },
@@ -259,7 +375,7 @@ const PricingSection = ({ onRegister }: { onRegister: () => void; }) => {
                                     </ul>
                                 </CardContent>
                                 <CardFooter>
-                                    <Button className={`w-full text-base py-6 ${tier.popular ? "bg-primary text-primary-foreground hover:bg-primary/90" : "glass-button"}`} variant={tier.popular ? "default" : "outline"} onClick={onRegister}>{tier.cta}</Button>
+                                    <Button className={`w-full text-base py-6 ${tier.popular ? "bg-primary text-primary-foreground hover:bg-primary/90" : "glass-button"}`} variant={tier.popular ? "default" : "outline"} onClick={onRegisterClick}>{tier.cta}</Button>
                                 </CardFooter>
                             </Card>
                         </motion.div>
@@ -270,7 +386,7 @@ const PricingSection = ({ onRegister }: { onRegister: () => void; }) => {
     );
 };
 
-const TestimonialsSection = ({ onRegister }: { onRegister: () => void; }) => {
+const TestimonialsSection = () => {
     const testimonials = [
         { name: "Elena R.", role: "Directora de Proyectos", avatar: "/sarah-avatar.png", text: "Jello ha revolucionado cómo gestionamos proyectos. La IA es un ahorro de tiempo increíble.", rating: 5 },
         { name: "Marcos G.", role: "Fundador de Startup", avatar: "/mike-avatar.jpg", text: "La capacidad de encontrar colaboradores para nuestro proyecto open-source directamente en la plataforma ha sido un cambio radical.", rating: 5 },
@@ -303,13 +419,13 @@ const TestimonialsSection = ({ onRegister }: { onRegister: () => void; }) => {
     );
 };
 
-const CtaSection = ({ onRegister }: { onRegister: () => void; }) => (
+const CtaSection = ({ onRegisterClick }: { onRegisterClick: () => void; }) => (
     <section className="py-24 px-4">
         <div className="container max-w-4xl mx-auto text-center">
             <motion.div className="space-y-6" initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.6 }}>
                 <h2 className="text-4xl lg:text-5xl font-bold text-balance">Tu Futuro Productivo Comienza Hoy</h2>
                 <p className="text-xl text-card-foreground max-w-2xl mx-auto text-pretty">Únete a la nueva era de la gestión de proyectos. Es gratis, es potente, es Jello.</p>
-                <Button size="lg" className="group text-lg py-7 px-8 hover:scale-105 transition-transform duration-300" onClick={onRegister}>
+                <Button size="lg" className="group text-lg py-7 px-8 hover:scale-105 transition-transform duration-300" onClick={onRegisterClick}>
                     Empieza a construir tu éxito
                     <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Button>

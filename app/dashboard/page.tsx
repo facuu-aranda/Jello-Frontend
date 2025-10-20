@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Plus } from "lucide-react"
 import { TaskModal } from "@/components/tasks/task-modal"
 import { useApi } from "@/hooks/useApi"
-import { ProjectSummary, TaskDetails } from "@/types"
+import { ProjectSummary, TaskDetails, ProjectDetails as ProjectDetailsType, UserSummary } from "@/types"
 import { useAuth } from "@/contexts/auth-context"
 import { apiClient } from "@/lib/api"
 import { toast } from "sonner"
@@ -22,19 +22,36 @@ import { toast } from "sonner"
 export default function DashboardPage() {
   const { user } = useAuth();
   const { data: recentProjects, isLoading: isLoadingProjects, refetch: refetchProjects } = useApi<ProjectSummary[]>('/projects?limit=3');
-  const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
+   const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
+  const [projectMembersForTask, setProjectMembersForTask] = React.useState<UserSummary[]>([]);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
-  const handleTaskView = async (taskSummary: any) => {
+
+const handleTaskView = async (taskSummary: any) => {
     try {
       toast.info("Loading task details...");
-      const taskDetails = await apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`);
+      
+      // Hacemos ambas peticiones en paralelo para más eficiencia
+      const [taskDetails, projectDetails] = await Promise.all([
+        apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`),
+        apiClient.get<ProjectDetailsType>(`/projects/${taskSummary.projectId}`)
+      ]);
+      
       setSelectedTask(taskDetails);
+      setProjectMembersForTask(projectDetails.members); // Guardamos los miembros
       setIsModalOpen(true);
+      
       toast.dismiss();
     } catch (error) {
       toast.error("Failed to load task details.");
+      toast.dismiss();
     }
+  }
+  
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedTask(null);
+    setProjectMembersForTask([]);
   }
 
   return (
@@ -58,7 +75,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            <AssignedTasksWidget />
+            <AssignedTasksWidget onTaskClick={handleTaskView} />
             <PersonalTodoWidget />
             <RecentActivityWidget />
           </div>
@@ -85,11 +102,12 @@ export default function DashboardPage() {
         </div>
       </AppLayout>
 
-      <TaskModal
+       <TaskModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleModalClose}
         task={selectedTask}
         onDataChange={refetchProjects}
+        projectMembers={projectMembersForTask}
         showGoToProjectButton={true}
       />
     </>
