@@ -170,7 +170,6 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         </footer>
       </div>
 
-      {/* --- CAMBIO: Se pasan las props para intercambiar modales --- */}
       <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
         <DialogContent className="p-0 border-none bg-transparent w-[90vw] max-w-md">
           <LoginForm onSwitchToRegister={switchToRegister} />
