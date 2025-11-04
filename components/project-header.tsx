@@ -28,9 +28,9 @@ export function ProjectHeader({ project, onEdit, onInviteMembers }: ProjectHeade
       </div>
 
       {/* Header Content */}
-      <div className="flex flex-col  md:flex-row gap-4 md:items-end md:justify-between">
+      <div className="flex flex-col overflow-x-hidden md:flex-row gap-4 md:items-end md:justify-between">
         {/* Left Side: Avatar, Title, Description, Members */}
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-4 min-w-0">
            <Avatar className={cn("w-16 h-16 rounded-full border-4 border-background", !project.projectImageUrl && project.color)}>
             <AvatarImage src={project.projectImageUrl || undefined} className="rounded-full" />
             <AvatarFallback className="rounded-full text-2xl font-bold">
@@ -38,9 +38,9 @@ export function ProjectHeader({ project, onEdit, onInviteMembers }: ProjectHeade
             </AvatarFallback>
           </Avatar>
           
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-foreground">{project.name}</h1>
-            <p className="text-muted-foreground max-w-xl">{project.description}</p>
+          <div className="space-y-1 min-w-0">
+            <h1 className="text-3xl truncate font-bold text-foreground">{project.name}</h1>
+            <p className="text-muted-foreground truncate">{project.description}</p>
             
             <TooltipProvider delayDuration={100}>
               <Tooltip>

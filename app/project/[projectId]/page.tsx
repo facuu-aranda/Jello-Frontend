@@ -94,11 +94,9 @@ export default function ProjectPage() {
   React.useEffect(() => {
     const taskIdFromUrl = searchParams.get('taskId');
     if (taskIdFromUrl && project) {
-      // Buscamos la tarea en los datos del proyecto para evitar una llamada extra si ya la tenemos
       const taskSummary = Object.values(project.tasksByStatus).flat().find(t => t.id === taskIdFromUrl);
       if (taskSummary) {
         handleTaskClick(taskSummary);
-        // Opcional: limpiar el parámetro de la URL para que no se vuelva a abrir al recargar
         router.replace(`/project/${projectId}`, { scroll: false });
       }
     }
@@ -107,22 +105,37 @@ export default function ProjectPage() {
   const handleCreateTask = async (formData: FormData) => {
     setIsCreateTaskModalOpen(false);
     toast.info("Creating new task...");
-
     try {
-      const newTask = await apiClient.post<TaskSummary>(`/projects/${projectId}/tasks`, formData);
+      const newTask = await apiClient.post<TaskSummary>(`/projects/${projectId}/tasks`, formData); // 
 
       toast.success(`Task "${newTask.title}" created!`);
 
-      // Refresca toda la data del proyecto para que la UI esté 100% sincronizada.
-      refetch();
+      setProject(prevProject => {
+        if (!prevProject) return null;
+
+        // 3. Agrega la nueva tarea a la columna correcta
+        const status = newTask.status;
+        const updatedTasksInStatus = [...prevProject.tasksByStatus[status], newTask];
+
+        return {
+          ...prevProject,
+          tasksByStatus: {
+            ...prevProject.tasksByStatus,
+            [status]: updatedTasksInStatus,
+          }
+        };
+      });
 
     } catch (err) {
-      toast.error(`Failed to create task: ${(err as Error).message}`);
+      toast.error(`Failed to create task: ${(err as Error).message}`); // [cite: 345]
     }
   };
 
-  // --- FIN DE LA CORRECCIÓN ---
-
+  const handleModalClose = () => {
+    setIsTaskModalOpen(false);
+    setSelectedTask(null);
+    router.replace(`/project/${projectId}`, { scroll: false });
+  }
 
   const handleEditProject = async (formData: FormData) => {
     if (!project) return;
@@ -154,6 +167,25 @@ export default function ProjectPage() {
       toast.error((err as Error).message);
     }
   }
+
+  const handleTaskDeleteOptimistic = (taskId: string, status: string) => {
+    if (!project) return;
+
+    setProject(prevProject => {
+      if (!prevProject) return null;
+      
+      const updatedTasksInStatus = prevProject.tasksByStatus[status as keyof ProjectDetails['tasksByStatus']]
+        .filter(task => task.id !== taskId);
+
+      return {
+        ...prevProject,
+        tasksByStatus: {
+          ...prevProject.tasksByStatus,
+          [status]: updatedTasksInStatus,
+        }
+      };
+    });
+  };
 
   if (isLoading) {
     return (
@@ -202,14 +234,14 @@ export default function ProjectPage() {
         </div>
       </AppLayout>
 
-      {selectedTask && ( 
-        <TaskModal 
-          isOpen={isTaskModalOpen} 
-          onClose={() => setIsTaskModalOpen(false)} 
-          task={selectedTask} 
+      {selectedTask && (
+        <TaskModal
+          isOpen={isTaskModalOpen}
+          onClose={handleModalClose}
+          task={selectedTask}
           onDataChange={refetch}
           projectMembers={project.members}
-        /> 
+        />
       )}
 
       <CreateTaskModal isOpen={isCreateTaskModalOpen} onClose={() => setIsCreateTaskModalOpen(false)} onSubmit={handleCreateTask} defaultStatus={defaultStatusForCreate} projectId={projectId} />

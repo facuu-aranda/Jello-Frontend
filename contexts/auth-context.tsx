@@ -1,4 +1,3 @@
-// contexts/auth-context.tsx
 "use client";
 
 import * as React from "react";
@@ -6,7 +5,6 @@ import { UserProfile, ApiError } from "@/types";
 import { apiClient } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -27,7 +25,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const fetchUser = React.useCallback(async () => {
-    // Primero intenta con sessionStorage, luego con localStorage
     const sessionToken = sessionStorage.getItem('authToken');
     const localToken = localStorage.getItem('authToken');
     const storedToken = sessionToken || localToken;
@@ -38,7 +35,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = await apiClient.get<UserProfile>('/user/me');
         setUser(userData);
       } catch {
-        // Token inválido, limpiamos todo
         localStorage.removeItem('authToken');
         sessionStorage.removeItem('authToken');
         setToken(null);
@@ -55,16 +51,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleAuthSuccess = (data: { token: string; user: UserProfile }, rememberMe: boolean) => {
     setToken(data.token);
     setUser(data.user);
-    
-    // Guardar el token en el almacenamiento correcto
-    if (rememberMe) {
-      localStorage.setItem('authToken', data.token);
-      sessionStorage.removeItem('authToken');
-    } else {
-      sessionStorage.setItem('authToken', data.token);
-      localStorage.removeItem('authToken');
-    }
-    
+
+    localStorage.setItem('authToken', data.token);
+    sessionStorage.removeItem('authToken');
+
     router.push('/dashboard');
     toast.success(`Welcome, ${data.user.name}!`);
   };
@@ -74,11 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiClient.login({ ...data, rememberMe });
       handleAuthSuccess(response, rememberMe);
     } catch (error) {
-      // 3. Manejo de error mejorado
       const apiError = error as ApiError;
       const errorMessage = apiError.response?.data?.error || (error as Error).message || 'Ocurrió un error inesperado.';
-      
-      // Manejo específico del error 403
       if (apiError.response?.status === 403) {
         toast.error(errorMessage);
       } else {
@@ -89,12 +76,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (data: any): Promise<{ success: boolean }> => {
     try {
-      // El registro ya no devuelve un token, solo un mensaje de éxito.
       await apiClient.register(data);
       toast.success("Registro exitoso. Por favor, revisa tu correo para activar tu cuenta.");
       return { success: true };
     } catch (error) {
-      // 4. Manejo de error mejorado
       const apiError = error as ApiError;
       const errorMessage = apiError.response?.data?.error || (error as Error).message || 'Ocurrió un error inesperado.';
       toast.error(errorMessage);
@@ -105,7 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     setToken(null);
-    // Limpiar ambos almacenamientos al cerrar sesión
     localStorage.removeItem('authToken');
     sessionStorage.removeItem('authToken');
     router.push('/');

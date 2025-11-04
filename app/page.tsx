@@ -50,8 +50,6 @@ const NotificationsPlaceholder = () => (
     </Button>
 );
 
-// --- Componente para el cambio de tema (ThemeToggle) ---
-// Replicando la funcionalidad de UserMenu como solicitaste.
 const ThemeToggle = () => {
     const { theme, toggleTheme } = useTheme();
     return (
@@ -64,47 +62,29 @@ const ThemeToggle = () => {
 };
 
 
-// --- VISTA PARA EL USUARIO AUTENTICADO ---
-const LoggedInView = ({ user }: { user: UserProfile }) => (
-    <div className="flex flex-col min-h-screen w-full bg-background text-foreground">
-        <header className="sticky top-0 z-50 p-4 border-b bg-card/80 backdrop-blur-lg">
-            <div className="container mx-auto flex items-center justify-between">
-                <Link href="/" className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8"><AvatarImage src="/images/jelli-avatar.png" alt="Jello Logo" /><AvatarFallback>J</AvatarFallback></Avatar>
-                    <span className="text-xl font-bold">Jello</span>
-                </Link>
-                <div className="flex items-center gap-4">
-                    <Button asChild>
-                        <Link href="/dashboard">Ir al Dashboard</Link>
-                    </Button>
-                    <NotificationsPlaceholder />
-                    <UserMenu /> {/* El UserMenu ya tiene el user desde el contexto */}
-                </div>
-            </div>
-        </header>
-        <main className="flex-grow flex items-center justify-center text-center p-4">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7 }}
-            >
-                <h1 className="text-4xl sm:text-5xl font-bold">
-                    ¡Bienvenido de nuevo, {user.name}!
-                </h1>
-                <p className="mt-4 text-lg text-muted-foreground">
-                    Todo listo para que continúes donde lo dejaste.
-                </p>
-                <Button size="lg" className="mt-8 group" asChild>
-                    <Link href="/dashboard">
-                        Vamos al Dashboard
-                        <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                    </Link>
+const LoggedInNavbar = () => (
+    <motion.header 
+        initial={{ y: -100, opacity: 0 }} 
+        animate={{ y: 0, opacity: 1 }} 
+        transition={{ duration: 0.5, ease: "easeOut" }} 
+        className="sticky top-4 z-50 mx-auto w-[95%] max-w-7xl"
+    >
+        <div className="glass-card flex items-center justify-between p-3 rounded-2xl border border-border/50 shadow-lg">
+            {/* Asegúrate de que este Link también apunte a "/" */}
+            <Link href="/" className="flex items-center gap-2">
+                <Avatar className="h-8 w-8"><AvatarImage src="/images/jelli-avatar.png" alt="Jello Logo" /><AvatarFallback>J</AvatarFallback></Avatar>
+                <span className="text-xl font-bold">Jello</span>
+            </Link>
+            <div className="flex items-center gap-4">
+                <Button asChild>
+                    <Link href="/dashboard">Ir al Dashboard</Link>
                 </Button>
-            </motion.div>
-        </main>
-    </div>
+                <NotificationsPlaceholder />
+                <UserMenu /> {/* El UserMenu ya tiene el user desde el contexto */}
+            </div>
+        </div>
+    </motion.header>
 );
-
 
 // --- Componente Principal de la Landing Page ---
 export default function FinalStyledLandingPage() {
@@ -135,20 +115,19 @@ export default function FinalStyledLandingPage() {
         );
     }
 
-    // --- 3.2. ESTADO LOGUEADO ---
-    if (user) {
-        return <LoggedInView user={user} />;
-    }
+   
 
-    // --- 3.3. ESTADO DESLOGUEADO (Landing Page Original) ---
     return (
         <>
             <div className="relative flex min-h-screen w-full flex-col bg-background text-foreground overflow-x-hidden">
                 <AnimatedBackground />
 
                 {/* --- 4. GESTIÓN CENTRALIZADA DE MODALES --- */}
-                <Navbar onLoginClick={() => setIsLoginModalOpen(true)} onRegisterClick={() => setIsRegisterModalOpen(true)} />
-
+{user ? (
+                    <LoggedInNavbar />
+                ) : (
+                    <Navbar onLoginClick={() => setIsLoginModalOpen(true)} onRegisterClick={() => setIsRegisterModalOpen(true)} />
+                )}
                 <main className="relative z-10 flex-grow">
                     <HeroSection onRegisterClick={() => setIsRegisterModalOpen(true)} />
                     <DetailedFeaturesSection />

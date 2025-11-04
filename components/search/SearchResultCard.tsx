@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { UserPlus, Handshake } from "lucide-react"
 import { InviteUserModal } from "@/components/modals/InviteUserModal"
 import { CollaborateModal } from "@/components/modals/CollaborateModal"
-import { SearchResult } from "@/types" // Importa el tipo centralizado
+import { SearchResult } from "@/types" 
 import { DetailModal } from "@/components/modals/DetailModal"
 interface SearchResultCardProps {
   result: SearchResult
@@ -29,24 +29,22 @@ export function SearchResultCard({ result }: SearchResultCardProps) {
       <motion.div
         className="glass-card p-6 flex flex-col h-full cursor-pointer"
         whileHover={{ scale: 1.04, transition: { type: "spring" }}}
-        whileTap={{ scale: 0.96 }}
         onClick={() => setDetailModalOpen(true)}
       >
-        {/* El flex-grow empuja el pie de la tarjeta hacia abajo */}
-        <div className="flex-grow">
+        <div className="flex-grow pb-4">
           <div className="flex items-start gap-4">
             <Avatar className="w-12 h-12 rounded-lg">
               <AvatarImage src={result.avatar ?? undefined} />
               <AvatarFallback className="rounded-lg">{result.name.charAt(0)}</AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-foreground">{result.name}</h3>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1 min-w-0">
+                <h3 className="font-semibold text-foreground truncate">{result.name}</h3>
                 <Badge variant={result.type === 'user' ? 'secondary' : 'default'}>
                   {result.type}
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground line-clamp-2">{result.description}</p>
+              <p className="text-sm text-muted-foreground break-words truncate">{result.description}</p>
             </div>
           </div>
         </div>
@@ -67,7 +65,6 @@ export function SearchResultCard({ result }: SearchResultCardProps) {
         </div>
       </motion.div>
 
-      {/* Modales que se abren desde esta tarjeta */}
       <DetailModal
         isOpen={isDetailModalOpen}
         onClose={() => setDetailModalOpen(false)}
@@ -82,7 +79,7 @@ export function SearchResultCard({ result }: SearchResultCardProps) {
   user={{
     id: result.id,
     name: result.name,
-    avatarUrl: result.avatar // Mapeamos 'avatar' a 'avatarUrl'
+    avatarUrl: result.avatar 
   }} 
 />
       )}

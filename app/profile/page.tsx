@@ -37,14 +37,12 @@ export default function ProfilePage() {
     toast.info("Saving your profile...");
     
     try {
-      // 1. Subir avatar si cambió
       if (newAvatar) {
         const avatarFormData = new FormData();
         avatarFormData.append('file', newAvatar);
         const uploadRes = await apiClient.post<{ url: string }>('/user/me/avatar', avatarFormData);
         setFormData(prev => ({ ...prev, avatarUrl: uploadRes.url }));
       }
-      // 2. Subir banner si cambió
       if (newBanner) {
         const bannerFormData = new FormData();
         bannerFormData.append('file', newBanner);
@@ -52,12 +50,10 @@ export default function ProfilePage() {
         setFormData(prev => ({ ...prev, bannerUrl: uploadRes.url }));
       }
       
-      // 3. Actualizar el resto de los datos del perfil
       await apiClient.put('/user/profile', formData);
 
-      // 4. Refrescar los datos y notificar al usuario
-      await revalidateUser(); // Actualiza el usuario en el AuthContext
-      await refetch(); // Vuelve a cargar los datos en esta página
+      await revalidateUser(); 
+      await refetch(); 
       toast.success("Profile updated successfully!");
 
     } catch (err) {
@@ -96,7 +92,7 @@ export default function ProfilePage() {
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto space-y-8 pb-12">
+      <div className="max-w-5xl mx-auto space-y-8 pb-12 bg-card/72 rounded-2xl shadow-xl">
         <div className="relative">
           <div className="h-48 bg-muted rounded-2xl overflow-hidden relative">
             <img src={newBanner ? URL.createObjectURL(newBanner) : formData.bannerUrl || "/placeholder.jpg"} alt="Banner" className="w-full h-full object-cover" />
@@ -122,24 +118,24 @@ export default function ProfilePage() {
         </div>
 
         <div className="pt-14 px-8 flex justify-between items-start">
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             {isEditing ? (
               <Input 
-                className="text-3xl font-bold h-auto p-0 border-none focus-visible:ring-0" 
+                className="text-3xl font-bold h-auto p-2 border-none focus-visible:ring-0" 
                 value={formData.name || ''} 
                 onChange={(e) => handleFieldChange('name', e.target.value)} 
               />
             ) : (
-              <h1 className="text-3xl font-bold">{formData.name}</h1>
+              <h1 className="text-3xl font-bold truncate">{formData.name}</h1>
             )}
              {isEditing ? (
               <Input 
-                className="text-muted-foreground p-0 h-auto border-none focus-visible:ring-0" 
+                className="text-muted-foreground p-2 h-auto border-none focus-visible:ring-0" 
                 value={formData.email || ''} 
                 onChange={(e) => handleFieldChange('email', e.target.value)} 
               />
             ) : (
-              <p className="text-muted-foreground">{formData.email}</p>
+              <p className="text-muted-foreground break-words">{formData.email}</p>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -155,7 +151,7 @@ export default function ProfilePage() {
         <div className="p-8 grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
             <div className="glass-card p-6 rounded-2xl">
-              <h3 className="text-lg font-semibold mb-4">About</h3>
+              <h3 className="text-lg font-semibold mb-4">Sobre mi</h3>
               {isEditing ? (
                 <Textarea 
                   value={formData.bio || ''} 
@@ -163,19 +159,19 @@ export default function ProfilePage() {
                   className="min-h-[120px]"
                 />
               ) : (
-                <p className="text-muted-foreground">{formData.bio || "No bio provided."}</p>
+                <p className="text-muted-foreground break-words">{formData.bio || "No bio provided."}</p>
               )}
             </div>
           </div>
           <div className="md:col-span-1 space-y-6">
             <div className="glass-card p-6 rounded-2xl space-y-4">
               <div>
-                <Label>Job Title</Label>
-                {isEditing ? <Input value={formData.title || ''} onChange={(e) => handleFieldChange('title', e.target.value)} /> : <p className="text-sm">{formData.title || "Not specified"}</p>}
+                <Label>Cargo</Label>
+                {isEditing ? <Input value={formData.title || ''} onChange={(e) => handleFieldChange('title', e.target.value)} /> : <p className="text-sm break-words">{formData.title || "Not specified"}</p>}
               </div>
               <div>
                 <Label>Timezone</Label>
-                {isEditing ? <Input value={formData.timezone || ''} onChange={(e) => handleFieldChange('timezone', e.target.value)} /> : <p className="text-sm">{formData.timezone || "Not specified"}</p>}
+                {isEditing ? <Input value={formData.timezone || ''} onChange={(e) => handleFieldChange('timezone', e.target.value)} /> : <p className="text-sm break-words">{formData.timezone || "Not specified"}</p>}
               </div>
             </div>
             <div className="glass-card p-6 rounded-2xl">

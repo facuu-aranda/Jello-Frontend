@@ -27,8 +27,7 @@ const priorities = [
 ]
 
 export default function PersonalTodosPage() {
-  const { data: todos, isLoading, error, refetch } = useApi<Todo[]>('/todos');
-  
+const { data: todos, isLoading, error, refetch, setData } = useApi<Todo[]>('/todos');
   const [isAdding, setIsAdding] = useState(false)
   const [newTodoText, setNewTodoText] = useState("")
   const [newTodoPriority, setNewTodoPriority] = useState<Todo['priority']>("medium")
@@ -43,58 +42,61 @@ export default function PersonalTodosPage() {
   const addTodo = async () => {
     if (!newTodoText.trim()) return;
     try {
-      await apiClient.post('/todos', {
+      const newTodo = await apiClient.post<Todo>('/todos', { 
         text: newTodoText,
         priority: newTodoPriority,
         category: newTodoCategory,
         dueDate: newTodoDueDate?.toISOString()
       });
+      
       toast.success("Todo added!");
-      refetch();
-      setNewTodoText(""); 
-      setNewTodoPriority("medium"); 
-      setNewTodoCategory("Personal"); 
+      
+      setData(prevTodos => (prevTodos ? [...prevTodos, newTodo] : [newTodo]));
+
+      setNewTodoText("");
+      setNewTodoPriority("medium");
+      setNewTodoCategory("Personal");
       setNewTodoDueDate(undefined);
       setIsAdding(false);
+    } catch (err) {
+      toast.error((err as Error).message); 
+    }
+  }
+
+  const toggleTodo = async (id: string, completed: boolean) => {
+    try {
+      await apiClient.put(`/todos/${id}`, { completed });
+      toast.success(`Task ${completed ? 'completed' : 'reopened'}!`);
+      refetch();
     } catch (err) {
       toast.error((err as Error).message);
     }
   }
 
-   const toggleTodo = async (id: string, completed: boolean) => { 
-    try {
-        await apiClient.put(`/todos/${id}`, { completed });
-        toast.success(`Task ${completed ? 'completed' : 'reopened'}!`);
-        refetch();
-    } catch (err) {
-        toast.error((err as Error).message);
-    }
-  }
-
   const deleteTodo = async (id: string) => {
-     if (!window.confirm("Are you sure you want to delete this todo?")) return;
-     try {
-        await apiClient.del(`/todos/${id}`);
-        toast.success("Todo deleted.");
-        refetch();
-     } catch (err) {
-        toast.error((err as Error).message);
-     }
+    if (!window.confirm("Are you sure you want to delete this todo?")) return;
+    try {
+      await apiClient.del(`/todos/${id}`);
+      toast.success("Todo deleted.");
+      refetch();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
   }
 
   const filteredTodos = useMemo(() => {
     return todos?.filter((todo) => {
-        if (!showCompleted && todo.completed) return false
-        if (filterCategory !== "All" && todo.category !== filterCategory) return false
-        if (filterPriority !== "All" && todo.priority !== filterPriority.toLowerCase()) return false
-        return true
-      }) || [];
+      if (!showCompleted && todo.completed) return false
+      if (filterCategory !== "All" && todo.category !== filterCategory) return false
+      if (filterPriority !== "All" && todo.priority !== filterPriority.toLowerCase()) return false
+      return true
+    }) || [];
   }, [todos, showCompleted, filterCategory, filterPriority]);
 
   const completedCount = todos?.filter((todo) => todo.completed).length || 0;
   const totalCount = todos?.length || 0;
   const progressPercentage = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-  
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high": return "bg-red-500";
@@ -127,31 +129,31 @@ export default function PersonalTodosPage() {
         </div>
 
         <div className="glass-card p-4 rounded-2xl">
-            <div className="flex flex-wrap gap-4 items-center">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">Category:</span>
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">Priority:</span>
-                <Select value={filterPriority} onValueChange={setFilterPriority}>
-                  <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>{priorities.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox id="show-completed" checked={showCompleted} onCheckedChange={(checked) => setShowCompleted(Boolean(checked))} />
-                <Label htmlFor="show-completed" className="text-sm">Show completed</Label>
-              </div>
-              <div className="flex-grow flex justify-end">
-              <Button variant={isManaging ? "destructive" : "outline"} onClick={() => setIsManaging(!isManaging)}>
-                  {isManaging ? "Done" : "Manage"}
-                </Button>
-              </div>
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">Category:</span>
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                <SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">Priority:</span>
+              <Select value={filterPriority} onValueChange={setFilterPriority}>
+                <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                <SelectContent>{priorities.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id="show-completed" checked={showCompleted} onCheckedChange={(checked) => setShowCompleted(Boolean(checked))} />
+              <Label htmlFor="show-completed" className="text-sm">Show completed</Label>
+            </div>
+            <div className="flex-grow flex justify-end">
+              <Button variant={isManaging ? "destructive" : "outline"} onClick={() => setIsManaging(!isManaging)}>
+                {isManaging ? "Done" : "Manage"}
+              </Button>
+            </div>
+          </div>
         </div>
 
         <div className="glass-card p-4 rounded-2xl">
@@ -162,21 +164,21 @@ export default function PersonalTodosPage() {
                   <Input placeholder="What do you need to do?" value={newTodoText} onChange={(e) => setNewTodoText(e.target.value)} className="text-lg h-12" autoFocus />
                   <div className="grid sm:grid-cols-3 gap-4">
                     <div className="space-y-2">
-    <Label>Priority</Label>
-    <Select 
-        value={newTodoPriority} 
-        onValueChange={(value) => setNewTodoPriority(value as Todo['priority'])}
-    >
-        <SelectTrigger><SelectValue /></SelectTrigger>
-        <SelectContent>
-            {priorities.filter(p => p.value !== 'All').map(p => 
-                <SelectItem key={p.value} value={p.value}>
-                    {p.label}
-                </SelectItem>
-            )}
-        </SelectContent>
-    </Select>
-</div>
+                      <Label>Priority</Label>
+                      <Select
+                        value={newTodoPriority}
+                        onValueChange={(value) => setNewTodoPriority(value as Todo['priority'])}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {priorities.filter(p => p.value !== 'All').map(p =>
+                            <SelectItem key={p.value} value={p.value}>
+                              {p.label}
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
                     <div className="space-y-2">
                       <Label>Category</Label>
@@ -205,20 +207,20 @@ export default function PersonalTodosPage() {
         </div>
 
         {isLoading ? (
-            <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}
-            </div>
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}
+          </div>
         ) : error ? (
-            <div className="text-center text-destructive"><AlertTriangle className="mx-auto mb-2" /> {error}</div>
+          <div className="text-center text-destructive"><AlertTriangle className="mx-auto mb-2" /> {error}</div>
         ) : (
           <div className="space-y-3">
             <AnimatePresence>
               {filteredTodos.map((todo) => (
                 <motion.div key={todo._id} layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -100 }} className="glass-card p-4 rounded-2xl">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 w-full">
                     <Checkbox checked={todo.completed} onCheckedChange={(checked) => toggleTodo(todo._id, !!checked)} />
-                    <div className="flex-1">
-                      <p className={`text-base ${todo.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>{todo.text}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-base ${todo.completed ? "line-through text-muted-foreground" : "text-foreground wrap-break-words"} break-words`}>{todo.text}</p>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
                         <Badge variant="secondary">{todo.category}</Badge>
                         <div className="flex items-center gap-1.5">

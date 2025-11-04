@@ -46,19 +46,16 @@ export default function SearchPage() {
     <AppLayout>
       <div className="max-w-4xl mx-auto space-y-6 p-6">
         
-        {/* --- CAMBIO DE DISEÑO: Se eliminó el contenedor glass-card --- */}
         <div className="space-y-6">
-          {/* Fila 1: Título */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Search</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Buscar</h1>
               <p className="text-sm sm:text-base text-muted-foreground">
-                Find projects, users, and more across your workspace.
+                Encuentra proyectos, usuarios y más.
               </p>
             </div>
           </div>
 
-          {/* Fila 2: Input y Filtros */}
           <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />

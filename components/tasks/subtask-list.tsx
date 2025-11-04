@@ -67,11 +67,11 @@ export function SubtaskList({ subtasks, isEditing, onSubtaskToggle, onSubtaskAdd
               <label htmlFor={`subtask-${subtask.id}`} className={`flex-1 text-sm ${subtask.completed ? "line-through text-muted-foreground" : "text-foreground"} ${isEditing ? 'cursor-pointer' : ''}`}>
                 {subtask.text}
               </label>
-              {isEditing && (
+             {isEditing && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                  className="w-6 h-6 transition-opacity text-destructive"
                   onClick={() => onSubtaskDelete(subtask.id)}
                 >
                   <Trash2 className="w-3 h-3" />

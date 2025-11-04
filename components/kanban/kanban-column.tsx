@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from 'react';
-// CORRECTION: Import the necessary components and types from the library
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Draggable,
   Droppable,
@@ -42,19 +42,17 @@ export function KanbanColumn({ id, title, tasks, onAddTask, onTaskClick }: Kanba
       </div>
 
       <Droppable droppableId={id}>
-        {/* CORRECTION: Add explicit types for the render prop arguments */}
         {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={cn(
-    "p-4 space-y-3 transition-colors duration-200 min-h-[300px] flex-grow", // <-- LÍNEA MODIFICADA
+    "p-4 space-y-3 transition-colors duration-200 min-h-[300px] flex-grow", 
     snapshot.isDraggingOver ? 'bg-primary/10' : ''
             )}
           >
             {tasks.map((task, index) => (
               <Draggable key={task.id} draggableId={task.id} index={index}>
-                {/* CORRECTION: Add explicit type for the render prop argument */}
                 {(provided: DraggableProvided) => (
                   <div
                     ref={provided.innerRef}

@@ -48,7 +48,7 @@ export function TaskCard({ task }: TaskCardProps) {
         </div>
       </div>
       
-      <h4 className="font-medium text-foreground leading-tight pr-8">{task.title}</h4>
+      <h4 className="font-medium text-foreground truncate leading-tight pr-8">{task.title}</h4>
 
       {task.subtasks.total > 0 && (
         <div className="space-y-1">
