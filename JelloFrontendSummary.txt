@@ -107,6 +107,7 @@ Jello-Frontend/
 │   │   ├── create-project-modal.test.tsx
 │   │   ├── create-project-modal.tsx
 │   │   ├── create-task-modal.tsx
+│   │   ├── DeleteProjectConfirmModal.tsx
 │   │   ├── DeleteTaskAlert.tsx
 │   │   ├── DetailModal.tsx
 │   │   ├── edit-project-modal.tsx
@@ -1260,7 +1261,7 @@ import {
     Check,
     Bell, // Icono importado
     Sun,  // Icono para ThemeToggle
-    Moon, 
+    Moon, // Icono para ThemeToggle
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/auth-context"; // Hook de autenticación
@@ -1288,8 +1289,6 @@ const NotificationsPlaceholder = () => (
     </Button>
 );
 
-// --- Componente para el cambio de tema (ThemeToggle) ---
-// Replicando la funcionalidad de UserMenu como solicitaste.
 const ThemeToggle = () => {
     const { theme, toggleTheme } = useTheme();
     return (
@@ -1302,47 +1301,29 @@ const ThemeToggle = () => {
 };
 
 
-// --- VISTA PARA EL USUARIO AUTENTICADO ---
-const LoggedInView = ({ user }: { user: UserProfile }) => (
-    <div className="flex flex-col min-h-screen w-full bg-background text-foreground">
-        <header className="sticky top-0 z-50 p-4 border-b bg-card/80 backdrop-blur-lg">
-            <div className="container mx-auto flex items-center justify-between">
-                <Link href="/" className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8"><AvatarImage src="/images/jelli-avatar.png" alt="Jello Logo" /><AvatarFallback>J</AvatarFallback></Avatar>
-                    <span className="text-xl font-bold">Jello</span>
-                </Link>
-                <div className="flex items-center gap-4">
-                    <Button asChild>
-                        <Link href="/dashboard">Ir al Dashboard</Link>
-                    </Button>
-                    <NotificationsPlaceholder />
-                    <UserMenu /> {/* El UserMenu ya tiene el user desde el contexto */}
-                </div>
-            </div>
-        </header>
-        <main className="flex-grow flex items-center justify-center text-center p-4">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7 }}
-            >
-                <h1 className="text-4xl sm:text-5xl font-bold">
-                    ¡Bienvenido de nuevo, {user.name}!
-                </h1>
-                <p className="mt-4 text-lg text-muted-foreground">
-                    Todo listo para que continúes donde lo dejaste.
-                </p>
-                <Button size="lg" className="mt-8 group" asChild>
-                    <Link href="/dashboard">
-                        Vamos al Dashboard
-                        <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                    </Link>
+const LoggedInNavbar = () => (
+    <motion.header 
+        initial={{ y: -100, opacity: 0 }} 
+        animate={{ y: 0, opacity: 1 }} 
+        transition={{ duration: 0.5, ease: "easeOut" }} 
+        className="sticky top-4 z-50 mx-auto w-[95%] max-w-7xl"
+    >
+        <div className="glass-card flex items-center justify-between p-3 rounded-2xl border border-border/50 shadow-lg">
+            {/* Asegúrate de que este Link también apunte a "/" */}
+            <Link href="/" className="flex items-center gap-2">
+                <Avatar className="h-8 w-8"><AvatarImage src="/images/jelli-avatar.png" alt="Jello Logo" /><AvatarFallback>J</AvatarFallback></Avatar>
+                <span className="text-xl font-bold">Jello</span>
+            </Link>
+            <div className="flex items-center gap-4">
+                <Button asChild>
+                    <Link href="/dashboard">Ir al Dashboard</Link>
                 </Button>
-            </motion.div>
-        </main>
-    </div>
+                <NotificationsPlaceholder />
+                <UserMenu /> {/* El UserMenu ya tiene el user desde el contexto */}
+            </div>
+        </div>
+    </motion.header>
 );
-
 
 // --- Componente Principal de la Landing Page ---
 export default function FinalStyledLandingPage() {
@@ -1373,20 +1354,19 @@ export default function FinalStyledLandingPage() {
         );
     }
 
-    // --- 3.2. ESTADO LOGUEADO ---
-    if (user) {
-        return <LoggedInView user={user} />;
-    }
+   
 
-    // --- 3.3. ESTADO DESLOGUEADO (Landing Page Original) ---
     return (
         <>
             <div className="relative flex min-h-screen w-full flex-col bg-background text-foreground overflow-x-hidden">
                 <AnimatedBackground />
 
                 {/* --- 4. GESTIÓN CENTRALIZADA DE MODALES --- */}
-                <Navbar onLoginClick={() => setIsLoginModalOpen(true)} onRegisterClick={() => setIsRegisterModalOpen(true)} />
-
+{user ? (
+                    <LoggedInNavbar />
+                ) : (
+                    <Navbar onLoginClick={() => setIsLoginModalOpen(true)} onRegisterClick={() => setIsRegisterModalOpen(true)} />
+                )}
                 <main className="relative z-10 flex-grow">
                     <HeroSection onRegisterClick={() => setIsRegisterModalOpen(true)} />
                     <DetailedFeaturesSection />
@@ -2052,8 +2032,7 @@ export default function ProjectPage() {
   }
 
   const handleDeleteProject = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
-    toast.info("Deleting project...");
+    toast.info("Eliminando proyecto...");
     try {
       await apiClient.del(`/projects/${id}`);
       toast.success("Project deleted.");
@@ -5714,12 +5693,10 @@ interface SidebarProps {
 export function Sidebar({ isCollapsed, onToggle, isMobileView = false }: SidebarProps) {
   const pathname = usePathname()
   const { data: projects, isLoading: isLoadingProjects , refetch} = useApi<ProjectSummary[]>('/projects');
-  
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
   
   const { data } = useApi<{ notifications: Notification[] }>('/notifications?page=1&limit=10');
-
-const notificationCount = data?.notifications?.filter(n => !n.read).length || 0;
+  const notificationCount = data?.notifications?.filter(n => !n.read).length || 0;
 
   const notificationButton = (
     <Button variant="ghost" size="icon" className="relative rounded-full">
@@ -5739,106 +5716,129 @@ const notificationCount = data?.notifications?.filter(n => !n.read).length || 0;
           animate={{ width: isCollapsed ? "5rem" : "16rem" }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
         >
+          
           <div className="flex flex-col h-full p-3">
-            <div className={cn("flex items-center gap-3 mb-4", isCollapsed ? "justify-center" : "px-3")}>
-              <Avatar className="w-8 h-8"><AvatarImage src="/images/jelli-avatar.png" alt="Jello" /><AvatarFallback>J</AvatarFallback></Avatar>
-              <AnimatePresence>{!isCollapsed && (<motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="text-xl font-bold text-foreground whitespace-nowrap">Jello</motion.span>)}</AnimatePresence>
-            </div>
+            {/* --- INICIO DE MODIFICACIÓN: Logo envuelto en Link --- */}
+            <Link href="/">
+              <div className={cn("flex items-center gap-3 mb-4", isCollapsed ? "justify-center" : "px-3")}>
+                <Avatar className="w-8 h-8"><AvatarImage src="/images/jelli-avatar.png" alt="Jello" /><AvatarFallback>J</AvatarFallback></Avatar>
+                <AnimatePresence>{!isCollapsed && (<motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="text-xl font-bold text-foreground whitespace-nowrap">Jello</motion.span>)}</AnimatePresence>
+              </div>
+            </Link>
+            {/* --- FIN DE MODIFICACIÓN --- */}
+      
             <div className="flex-grow overflow-y-auto space-y-4">
               <nav className="space-y-1 px-2">
                 {navigation.map((item) => (
                   <Tooltip key={item.name} delayDuration={0}>
                     <TooltipTrigger asChild>
-                      <Link href={item.href} className={cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors", pathname === item.href ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:bg-muted", isCollapsed && "justify-center")}>
+                
+                      <Link href={item.href} className={cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors", pathname === item.href ?
+ "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:bg-muted", isCollapsed && "justify-center")}>
                         <item.icon className="h-5 w-5" />
                         <AnimatePresence>{!isCollapsed && (<motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex-grow">{item.name}</motion.span>)}</AnimatePresence>
+                    
                       </Link>
                     </TooltipTrigger>
                     <TooltipContent side="right">{item.name}</TooltipContent>
                   </Tooltip>
                 ))}
               </nav>
+         
               <div className="px-2">
                 <div className={cn("mb-2 flex items-center", isCollapsed ? "justify-center" : "justify-between")}>
                   {!isCollapsed && (<motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="text-xs font-semibold text-muted-foreground uppercase">Projects</motion.span>)}
                   <Tooltip delayDuration={0}>
+         
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className={cn("h-7 w-7 rounded-md", isCollapsed ? "" : "")} onClick={() => setIsCreateModalOpen(true)}><Plus className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className={cn("h-7 w-7 rounded-md", isCollapsed ?
+ "" : "")} onClick={() => setIsCreateModalOpen(true)}><Plus className="h-4 w-4" /></Button>
                     </TooltipTrigger>
                     <TooltipContent side="right">Create Project</TooltipContent>
                   </Tooltip>
                 </div>
+                
                 <div className="space-y-1">
-  {isLoadingProjects ? (
-    Array.from({ length: 3 }).map((_, index) => (
-      <div key={index} className="flex items-center gap-3 rounded-md px-3 py-2">
-        <Skeleton className="h-2 w-2 rounded-full" />
-        {!isCollapsed && <Skeleton className="h-4 w-full" />}
-      </div>
-    ))
-  ) : (
-    projects?.map((project) => (
-      <Tooltip key={project.id} delayDuration={0}>
-        <TooltipTrigger asChild>
-          <Link href={`/project/${project.id}`} className={cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted", pathname === `/project/${project.id}` ? "text-primary" : "text-muted-foreground", isCollapsed && "justify-center")}>
-            <span className={cn("h-2 aspect-square w-2 min-w-2 rounded-full", project.color)} />
-            <AnimatePresence>
-              {!isCollapsed && (
-                <motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex-grow truncate">
-                  {project.name}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </Link>
-        </TooltipTrigger>
-        <TooltipContent side="right">{project.name}</TooltipContent>
-      </Tooltip>
-    ))
-  )}
-</div>
+                  {isLoadingProjects ? (
+                    Array.from({ length: 3 }).map((_, index) => (
+                      <div key={index} className="flex items-center gap-3 rounded-md px-3 py-2">
+                        <Skeleton className="h-2 w-2 rounded-full" />
+                        {!isCollapsed && <Skeleton className="h-4 w-full" />}
+                      </div>
+                    ))
+                  ) : (
+                    projects?.map((project) => (
+                      <Tooltip key={project.id} delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          
+                          <Link href={`/project/${project.id}`} className={cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted", pathname === `/project/${project.id}` ? "text-primary" : "text-muted-foreground", isCollapsed && "justify-center")}>
+                            <span className={cn("h-2 aspect-square w-2 min-w-2 rounded-full", project.color)} />
+                            <AnimatePresence>
+                              {!isCollapsed && (
+                                <motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, 
+ x: -10 }} className="flex-grow truncate">
+                                  {project.name}
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">{project.name}</TooltipContent>
+                      </Tooltip>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
             {!isMobileView && (
               <div className="mt-auto pt-4 border-t border-border/50">
                 <div className={cn("flex flex-col items-center gap-2")}>
-                  <div className={cn("flex items-center w-full", isCollapsed ? "flex-col gap-2" : "justify-between")}>
+                  <div 
+ className={cn("flex items-center w-full", isCollapsed ? "flex-col gap-2" : "justify-between")}>
                     <div className={cn("flex items-center", isCollapsed ? "flex-col gap-2" : "gap-1")}>
                       <Popover>
-                        {isCollapsed ? (
+                        {isCollapsed ?
+ (
                           <Tooltip>
                             <TooltipTrigger asChild><PopoverTrigger asChild>{notificationButton}</PopoverTrigger></TooltipTrigger>
                             <TooltipContent side="right">Notifications</TooltipContent>
+               
                           </Tooltip>
                         ) : (
                           <PopoverTrigger asChild>{notificationButton}</PopoverTrigger>
                         )}
+            
                         <PopoverContent side="right" align="start" className="p-0"><NotificationPanel /></PopoverContent>
                       </Popover>
                       <UserMenu />
                     </div>
+                   
                     {!isCollapsed && onToggle && (
                       <Button variant="ghost" size="icon" className="rounded-full" onClick={onToggle}><ChevronsLeft className="w-5 h-5" /></Button>
                     )}
                   </div>
                   {isCollapsed && onToggle && (
+      
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button variant="ghost" size="icon" className="w-full rounded-xl" onClick={onToggle}><ChevronsLeft className="w-5 h-5 rotate-180" /></Button>
                       </TooltipTrigger>
+        
                       <TooltipContent side="right">Expand</TooltipContent>
                     </Tooltip>
                   )}
                 </div>
               </div>
             )}
+     
           </div>
         </motion.aside>
       </TooltipProvider>
       <CreateProjectModal
-  isOpen={isCreateModalOpen}
-  onClose={() => setIsCreateModalOpen(false)}
-  onProjectCreated={ refetch } 
-/>
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onProjectCreated={ refetch } 
+      />
     </>
   )
 }
@@ -6868,6 +6868,130 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
 
 ############################## FIN DEL ARCHIVO: components\modals\create-task-modal.tsx ##################################
 
+############################## INICIO DEL ARCHIVO: components\modals\DeleteProjectConfirmModal.tsx ##############################
+
+"use client"
+
+import * as React from "react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
+import { toast } from "sonner"
+
+interface DeleteProjectConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirmDelete: () => void;
+  projectName: string;
+}
+
+/**
+ * Genera una cadena alfanumérica aleatoria de 8 caracteres.
+ */
+const generateRandomString = () => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
+export function DeleteProjectConfirmModal({ isOpen, onClose, onConfirmDelete, projectName }: DeleteProjectConfirmModalProps) {
+  const [confirmationString, setConfirmationString] = React.useState("");
+  const [userInput, setUserInput] = React.useState("");
+
+  // Regenera el código y limpia el input cada vez que el modal se abre
+  React.useEffect(() => {
+    if (isOpen) {
+      setConfirmationString(generateRandomString());
+      setUserInput("");
+    }
+  }, [isOpen]);
+
+  /**
+   * Bloquea el evento 'pegar' (paste) en el input.
+   */
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    toast.warning("Para confirmar, debes escribir el código manualmente.");
+  };
+
+  /**
+   * Bloquea el evento 'copiar' (copy) en el texto de confirmación.
+   */
+  const handleCopy = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    toast.error("No se puede copiar el texto de confirmación.");
+  };
+
+  // El botón de eliminar solo se activa si el texto coincide exactamente.
+  const isMatch = userInput === confirmationString;
+
+  return (
+    // Usamos 'Dialog' como en DeleteTaskAlert para que funcione sobre el modal de edición
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      {/* onPointerDownOutside previene que se cierre el modal de edición 
+        que está por debajo al hacer clic fuera.
+      */}
+      <DialogContent onPointerDownOutside={(e: any) => e.preventDefault()}>
+        <DialogHeader>
+          <DialogTitle>¿Estás absolutamente seguro?</DialogTitle>
+          <DialogDescription>
+            Esta acción no se puede deshacer. Esto eliminará permanentemente el proyecto <strong>{projectName}</strong>,
+            junto con todas sus tareas, etiquetas, comentarios y adjuntos.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 my-4">
+          <p className="text-sm text-foreground">
+            Para confirmar, por favor escribe la siguiente cadena de texto (se distinguen mayúsculas y minúsculas):
+          </p>
+          
+          {/* Este bloque previene que el usuario seleccione y copie el texto.
+          */}
+          <div 
+            className="w-full text-center bg-muted/80 text-foreground font-mono text-lg py-3 rounded-md"
+            style={{ userSelect: 'none' }} // Previene la selección de texto
+            onCopy={handleCopy} // Previene la copia por teclado
+          >
+            {confirmationString}
+          </div>
+
+          <Input 
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            onPaste={handlePaste} // Previene el pegado
+            placeholder="Escribe la cadena para confirmar..."
+            className={cn(
+              "font-mono text-center text-base",
+              // Añade feedback visual si el usuario está escribiendo
+              userInput && (isMatch ? "border-green-500 focus-visible:ring-green-500" : "border-destructive focus-visible:ring-destructive")
+            )}
+            aria-label="Confirmation input"
+          />
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={!isMatch}
+            onClick={onConfirmDelete}
+          >
+            Sí, entiendo y quiero eliminar este proyecto
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+############################## FIN DEL ARCHIVO: components\modals\DeleteProjectConfirmModal.tsx ##################################
+
 ############################## INICIO DEL ARCHIVO: components\modals\DeleteTaskAlert.tsx ##############################
 
 // components/modals/DeleteTaskAlert.tsx
@@ -7081,6 +7205,7 @@ import { UserPlus } from "lucide-react"
 import { LabelManager } from "@/components/forms/label-manager"
 import { apiClient } from "@/lib/api"
 import { toast } from "sonner"
+import { DeleteProjectConfirmModal } from "./DeleteProjectConfirmModal"
 
 interface ProjectFormData {
   name: string;
@@ -7107,7 +7232,7 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project,
   const [formData, setFormData] = React.useState<ProjectFormData>({ name: '', description: '', color: '' });
   const [isUserSearchModalOpen, setIsUserSearchModalOpen] = React.useState(false);
   const [currentMembers, setCurrentMembers] = React.useState<UserSummary[]>([]);
-
+const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
 const [projectLabels, setProjectLabels] = React.useState<LabelType[]>([]);
 const [labelsToAdd, setLabelsToAdd] = React.useState<string[]>([]);
 const [labelsToDelete, setLabelsToDelete] = React.useState<string[]>([]);
@@ -7283,7 +7408,7 @@ const handleLabelDelete = (id: string) => {
             </form>
           </div>
           <DialogFooter className="flex-shrink-0 pt-4 flex-nowrap justify-between w-full">
-              <Button variant="destructive" onClick={() => onDelete(project.id)}>Delete Project</Button>
+<Button variant="destructive" onClick={() => setIsDeleteConfirmOpen(true)}>Delete Project</Button>
               <div className="flex gap-2">
                   <Button variant="ghost" onClick={onClose}>Cancel</Button>
                   <Button type="submit" form="edit-project-form">Save changes</Button>
@@ -7297,6 +7422,15 @@ const handleLabelDelete = (id: string) => {
         onClose={() => setIsUserSearchModalOpen(false)}
         onSelectUsers={handleInviteUsers}
         excludedUserIds={currentMembers.map(m => m.id)}
+      />
+      <DeleteProjectConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => setIsDeleteConfirmOpen(false)}
+        projectName={project.name}
+        onConfirmDelete={() => {
+          setIsDeleteConfirmOpen(false); 
+          onDelete(project.id);       
+        }}
       />
     </>
   )
@@ -15265,7 +15399,6 @@ export function UserMenu() {
 
 ############################## INICIO DEL ARCHIVO: contexts\auth-context.tsx ##############################
 
-// contexts/auth-context.tsx
 "use client";
 
 import * as React from "react";
@@ -15273,7 +15406,6 @@ import { UserProfile, ApiError } from "@/types";
 import { apiClient } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -15294,7 +15426,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const fetchUser = React.useCallback(async () => {
-    // Primero intenta con sessionStorage, luego con localStorage
     const sessionToken = sessionStorage.getItem('authToken');
     const localToken = localStorage.getItem('authToken');
     const storedToken = sessionToken || localToken;
@@ -15305,7 +15436,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = await apiClient.get<UserProfile>('/user/me');
         setUser(userData);
       } catch {
-        // Token inválido, limpiamos todo
         localStorage.removeItem('authToken');
         sessionStorage.removeItem('authToken');
         setToken(null);
@@ -15322,16 +15452,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const handleAuthSuccess = (data: { token: string; user: UserProfile }, rememberMe: boolean) => {
     setToken(data.token);
     setUser(data.user);
-    
-    // Guardar el token en el almacenamiento correcto
-    if (rememberMe) {
-      localStorage.setItem('authToken', data.token);
-      sessionStorage.removeItem('authToken');
-    } else {
-      sessionStorage.setItem('authToken', data.token);
-      localStorage.removeItem('authToken');
-    }
-    
+
+    localStorage.setItem('authToken', data.token);
+    sessionStorage.removeItem('authToken');
+
     router.push('/dashboard');
     toast.success(`Welcome, ${data.user.name}!`);
   };
@@ -15341,11 +15465,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiClient.login({ ...data, rememberMe });
       handleAuthSuccess(response, rememberMe);
     } catch (error) {
-      // 3. Manejo de error mejorado
       const apiError = error as ApiError;
       const errorMessage = apiError.response?.data?.error || (error as Error).message || 'Ocurrió un error inesperado.';
-      
-      // Manejo específico del error 403
       if (apiError.response?.status === 403) {
         toast.error(errorMessage);
       } else {
@@ -15356,12 +15477,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (data: any): Promise<{ success: boolean }> => {
     try {
-      // El registro ya no devuelve un token, solo un mensaje de éxito.
       await apiClient.register(data);
       toast.success("Registro exitoso. Por favor, revisa tu correo para activar tu cuenta.");
       return { success: true };
     } catch (error) {
-      // 4. Manejo de error mejorado
       const apiError = error as ApiError;
       const errorMessage = apiError.response?.data?.error || (error as Error).message || 'Ocurrió un error inesperado.';
       toast.error(errorMessage);
@@ -15372,7 +15491,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     setToken(null);
-    // Limpiar ambos almacenamientos al cerrar sesión
     localStorage.removeItem('authToken');
     sessionStorage.removeItem('authToken');
     router.push('/');
