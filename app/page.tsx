@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
-// --- 1. IMPORTACIONES REQUERIDAS ---
 import {
     ArrowRight,
     Menu,
@@ -20,16 +19,16 @@ import {
     Lightbulb,
     MessageSquare,
     Check,
-    Bell, // Icono importado
-    Sun,  // Icono para ThemeToggle
-    Moon, // Icono para ThemeToggle
+    Bell, 
+    Sun,  
+    Moon, 
 } from "lucide-react";
 
-import { useAuth } from "@/contexts/auth-context"; // Hook de autenticación
-import { useTheme } from "@/contexts/theme-context"; // Hook para el tema
-import { Spinner } from "@/components/ui/spinner"; // Componente de carga
-import { UserMenu } from "@/components/user-menu"; // Menú de usuario
-import { UserProfile, TaskSummary } from "@/types"; // Tipos de la aplicación
+import { useAuth } from "@/contexts/auth-context"; 
+import { useTheme } from "@/contexts/theme-context"; 
+import { Spinner } from "@/components/ui/spinner"; 
+import { UserMenu } from "@/components/user-menu"; 
+import { UserProfile, TaskSummary } from "@/types"; 
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -41,7 +40,6 @@ import { LoginForm } from "@/components/login-form";
 import { RegisterForm } from "@/components/register-form";
 import { TaskCard as FloatingTaskCard } from "@/components/tasks/task-card";
 
-// --- 2. COMPONENTE PLACEHOLDER PARA NOTIFICACIONES ---
 const NotificationsPlaceholder = () => (
     <Button variant="ghost" size="icon" asChild>
         <Link href="/notifications">
@@ -70,7 +68,6 @@ const LoggedInNavbar = () => (
         className="sticky top-4 z-50 mx-auto w-[95%] max-w-7xl"
     >
         <div className="glass-card flex items-center justify-between p-3 rounded-2xl border border-border/50 shadow-lg">
-            {/* Asegúrate de que este Link también apunte a "/" */}
             <Link href="/" className="flex items-center gap-2">
                 <Avatar className="h-8 w-8"><AvatarImage src="/images/jelli-avatar.png" alt="Jello Logo" /><AvatarFallback>J</AvatarFallback></Avatar>
                 <span className="text-xl font-bold">Jello</span>
@@ -80,20 +77,17 @@ const LoggedInNavbar = () => (
                     <Link href="/dashboard">Ir al Dashboard</Link>
                 </Button>
                 <NotificationsPlaceholder />
-                <UserMenu /> {/* El UserMenu ya tiene el user desde el contexto */}
+                <UserMenu />
             </div>
         </div>
     </motion.header>
 );
 
-// --- Componente Principal de la Landing Page ---
 export default function FinalStyledLandingPage() {
-    // --- 3. LÓGICA DE ESTADO PRINCIPAL ---
     const { user, isLoading } = useAuth();
     const [isLoginModalOpen, setIsLoginModalOpen] = React.useState(false);
     const [isRegisterModalOpen, setIsRegisterModalOpen] = React.useState(false);
 
-    // --- Funciones para intercambiar modales ---
     const switchToRegister = () => {
         setIsLoginModalOpen(false);
         setIsRegisterModalOpen(true);
@@ -105,7 +99,6 @@ export default function FinalStyledLandingPage() {
     };
 
 
-    // --- 3.1. ESTADO DE CARGA ---
     if (isLoading) {
         return (
             <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
@@ -115,14 +108,11 @@ export default function FinalStyledLandingPage() {
         );
     }
 
-   
-
     return (
         <>
             <div className="relative flex min-h-screen w-full flex-col bg-background text-foreground overflow-x-hidden">
                 <AnimatedBackground />
 
-                {/* --- 4. GESTIÓN CENTRALIZADA DE MODALES --- */}
 {user ? (
                     <LoggedInNavbar />
                 ) : (
@@ -139,7 +129,6 @@ export default function FinalStyledLandingPage() {
                 <Footer />
             </div>
 
-            {/* --- 5. HABILITAR INTERCAMBIO ENTRE MODALES --- */}
             <Dialog open={isLoginModalOpen} onOpenChange={setIsLoginModalOpen}>
                 <DialogContent className="p-0 border-none bg-transparent w-[90vw] max-w-md">
                     <LoginForm onSwitchToRegister={switchToRegister} />
@@ -155,9 +144,7 @@ export default function FinalStyledLandingPage() {
     );
 }
 
-// --- SUBCOMPONENTES DE LA PÁGINA (MODIFICADOS PARA RECIBIR PROPS) ---
 
-// --- Navbar Modificado ---
 const Navbar = ({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; onRegisterClick: () => void; }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
     const navLinks = [
@@ -189,7 +176,7 @@ const Navbar = ({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; o
                 </Link>
                 <nav className="hidden md:flex items-center gap-6"><NavItems /></nav>
                 <div className="hidden md:flex items-center gap-2">
-                    <ThemeToggle /> {/* ThemeToggle añadido */}
+                    <ThemeToggle /> 
                     <Button variant="ghost" onClick={onLoginClick}>Sign In</Button>
                     <Button onClick={onRegisterClick}>Get Started</Button>
                 </div>
@@ -203,7 +190,7 @@ const Navbar = ({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; o
                                     <Button variant="outline" onClick={() => handleLinkClick(onLoginClick)}>Sign In</Button>
                                     <Button onClick={() => handleLinkClick(onRegisterClick)}>Get Started</Button>
                                     <div className="self-center">
-                                        <ThemeToggle /> {/* ThemeToggle añadido al menú móvil */}
+                                        <ThemeToggle /> 
                                     </div>
                                 </div>
                             </nav>
@@ -215,7 +202,6 @@ const Navbar = ({ onLoginClick, onRegisterClick }: { onLoginClick: () => void; o
     );
 };
 
-// --- HeroSection Modificado ---
 const HeroSection = ({ onRegisterClick }: { onRegisterClick: () => void; }) => {
     const mockTasks: TaskSummary[] = [
         { id: '1', title: 'Plan de Marketing para Lanzamiento', priority: 'high', labels: [{ _id: 'l1', name: 'Marketing', color: '#ec4899' }], assignees: [{ id: 'u1', name: 'S', avatarUrl: '/sarah-avatar.png' }], subtasks: { total: 5, completed: 2 }, status: 'in-progress', dueDate: '2025-11-15', commentCount: 3, attachmentCount: 1, projectId: 'p1' },
@@ -249,7 +235,7 @@ const HeroSection = ({ onRegisterClick }: { onRegisterClick: () => void; }) => {
     );
 };
 
-// --- El resto de los componentes de la landing no necesitan cambios, pero los incluyo por completitud ---
+
 
 const DetailedFeaturesSection = () => {
     const mainFeatures = [
@@ -279,7 +265,7 @@ const DetailedFeaturesSection = () => {
                     {mainFeatures.map((feature, index) => (
                         <motion.div key={feature.title} className={`bg-card/72 p-8 rounded-4xl flex flex-col md:flex-row items-center gap-12 lg:gap-24 ${index % 2 === 1 ? "md:flex-row-reverse" : ""}`} initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.8, ease: "easeOut" }}>
                             <div className="w-full md:w-1/2">
-                                <motion.div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-card/60  shadow-xl border border-border/50 flex items-center justify-center opacity-55 ">
+                                <motion.div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-card/60  shadow-xl border border-border/50 flex items-center justify-center opacity-80 ">
                                     <Image src={feature.image} alt={feature.title} width={600} height={338} className="object-cover rounded-2xl" />
                                 </motion.div>
                             </div>
