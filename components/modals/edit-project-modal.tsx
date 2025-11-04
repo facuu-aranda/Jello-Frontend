@@ -152,9 +152,9 @@ const handleLabelDelete = (id: string) => {
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[525px] max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Edit Project</DialogTitle>
+            <DialogTitle>Editar Projecto</DialogTitle>
             <DialogDescription>
-              Make changes to your project here. Click save when you're done.
+             Haz cambios en tu proyecto desde aqui. Dale click a guardar para no perder tus modificaciones.
             </DialogDescription>
           </DialogHeader>
           

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Plus } from "lucide-react"
 import { TaskModal } from "@/components/tasks/task-modal"
+import { CreateProjectModal } from "@/components/modals/create-project-modal" 
 import { useApi } from "@/hooks/useApi"
 import { ProjectSummary, TaskDetails, ProjectDetails as ProjectDetailsType, UserSummary } from "@/types"
 import { useAuth } from "@/contexts/auth-context"
@@ -25,13 +26,13 @@ export default function DashboardPage() {
    const [selectedTask, setSelectedTask] = React.useState<TaskDetails | null>(null);
   const [projectMembersForTask, setProjectMembersForTask] = React.useState<UserSummary[]>([]);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
 
 
 const handleTaskView = async (taskSummary: any) => {
     try {
       toast.info("Loading task details...");
       
-      // Hacemos ambas peticiones en paralelo para más eficiencia
       const [taskDetails, projectDetails] = await Promise.all([
         apiClient.get<TaskDetails>(`/tasks/${taskSummary.id}`),
         apiClient.get<ProjectDetailsType>(`/projects/${taskSummary.projectId}`)
@@ -68,12 +69,11 @@ const handleTaskView = async (taskSummary: any) => {
                 Here's what's happening with your projects today.
               </p>
             </div>
-            <Button className="gap-2 w-full sm:w-auto">
+            <Button className="gap-2 w-full sm:w-auto" onClick={() => setIsCreateModalOpen(true)}>
               <Plus className="w-4 h-4" />
-              New Project
+              Crear Proyecto
             </Button>
           </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <AssignedTasksWidget onTaskClick={handleTaskView} />
             <PersonalTodoWidget />
@@ -109,6 +109,11 @@ const handleTaskView = async (taskSummary: any) => {
         onDataChange={refetchProjects}
         projectMembers={projectMembersForTask}
         showGoToProjectButton={true}
+      />
+      <CreateProjectModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onProjectCreated={refetchProjects}
       />
     </>
   )

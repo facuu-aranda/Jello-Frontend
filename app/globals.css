@@ -273,6 +273,21 @@ body, .glass-card, .glass-modal, button, a, h1, p {
   -webkit-animation: water-expand 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
+.kanban-task-title {
+  width: 100%;
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+}
+.text-container-scrollable {
+  overflow-wrap: break-word;
+  word-wrap: break-word; 
+
+  overflow-y: auto;
+
+  max-height: 300px; 
+}
+
 @keyframes water-expand {
   from {
     transform: translate(-50%, -50%) scale(0);

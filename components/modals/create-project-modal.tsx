@@ -1,4 +1,3 @@
-// components/modals/create-project-modal.tsx
 "use client"
 
 import * as React from "react"
@@ -18,9 +17,11 @@ import { ColorSelector } from "@/components/forms/color-selector"
 import { UserSummary } from "@/types"
 import { UserPlus, X } from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { UserSearchModal } from "./UserSearchModal" // Importamos el nuevo modal
-
-// El tipo para el formulario que se envía
+import { UserSearchModal } from "./UserSearchModal" 
+import { apiClient } from "@/lib/api";
+import { ApiError } from "@/types"; 
+import { toast } from "sonner"; 
+import { Loader2 } from "lucide-react";
 interface ProjectFormData {
   name: string;
   description: string;
@@ -34,7 +35,7 @@ interface ProjectFormData {
 interface CreateProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Partial<ProjectFormData>) => void;
+  onProjectCreated: () => void;
 }
 
 const initialFormData: Partial<ProjectFormData> = {
@@ -44,8 +45,9 @@ const initialFormData: Partial<ProjectFormData> = {
   members: [],
 };
 
-export function CreateProjectModal({ isOpen, onClose, onSubmit }: CreateProjectModalProps) {
+export function CreateProjectModal({ isOpen, onClose, onProjectCreated }: CreateProjectModalProps) {
   const [formData, setFormData] = React.useState<Partial<ProjectFormData>>(initialFormData);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [memberObjects, setMemberObjects] = React.useState<UserSummary[]>([]);
   const [isUserSearchModalOpen, setIsUserSearchModalOpen] = React.useState(false);
 
@@ -79,10 +81,50 @@ export function CreateProjectModal({ isOpen, onClose, onSubmit }: CreateProjectM
     onClose();
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit(formData);
-    resetAndClose();
+    setIsSubmitting(true);
+    const toastId = toast.loading("Creating your new project...");
+
+    try {
+      // 1. Convertir el JSON a FormData (para las imágenes)
+      const data = new FormData();
+
+      // Función auxiliar para añadir campos solo si existen
+      const appendIfExists = (key: string, value: any) => {
+        if (value !== null && value !== undefined) {
+          data.append(key, value);
+        }
+      };
+
+      appendIfExists('name', formData.name);
+      appendIfExists('description', formData.description);
+      appendIfExists('color', formData.color);
+      appendIfExists('dueDate', formData.dueDate);
+      appendIfExists('projectImage', formData.projectImage);
+      appendIfExists('bannerImage', formData.bannerImage);
+
+      // Añadir el array de miembros
+      formData.members?.forEach((memberId: string) => {
+        data.append('members[]', memberId);
+      });
+
+      await apiClient.post('/projects', data);
+
+      toast.success("Project created successfully!", { id: toastId });
+      onProjectCreated(); // <-- Llama al callback de éxito
+      resetAndClose(); // <-- Cierra y resetea el modal
+
+    } catch (error) {
+      // 4. Error
+      console.error("Failed to create project:", error);
+      const apiError = error as ApiError;
+      const errorMessage = apiError.response?.data?.error || "Failed to create project.";
+      toast.error(errorMessage, { id: toastId });
+    } finally {
+      // 5. Finalizar
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -96,7 +138,7 @@ export function CreateProjectModal({ isOpen, onClose, onSubmit }: CreateProjectM
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} id="create-project-form" className="flex-1 overflow-y-auto px-2">
+          <form onSubmit={handleFormSubmit} id="create-project-form" className="flex-1 overflow-y-auto px-2">
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <label htmlFor="name" className="text-sm font-medium">Project Name</label>
@@ -163,8 +205,15 @@ export function CreateProjectModal({ isOpen, onClose, onSubmit }: CreateProjectM
           </form>
           
           <DialogFooter className="flex-shrink-0 pt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={resetAndClose}>Cancel</Button>
-            <Button type="submit" form="create-project-form">Create Project</Button>
+            <Button type="button" variant="ghost" onClick={resetAndClose} disabled={isSubmitting}>
+    Cancel
+  </Button>
+  <Button type="submit" form="create-project-form" disabled={isSubmitting}>
+    {isSubmitting ? (
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+    ) : null}
+    Create Project
+  </Button>
           </DialogFooter>
 
         </DialogContent>

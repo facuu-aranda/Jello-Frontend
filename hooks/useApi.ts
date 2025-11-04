@@ -1,16 +1,20 @@
-// Archivo: hooks/useApi.ts
-
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '@/lib/api';
 import { toast } from 'sonner';
 
-// Este hook manejará el estado de carga, los datos y los errores de una llamada a la API.
-export function useApi<T>(endpoint: string) {
+export function useApi<T>(endpoint: string | null) {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!endpoint) {
+        setIsLoading(false);
+        setData(null);
+        setError(null);
+        return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {

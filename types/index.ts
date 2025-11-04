@@ -1,5 +1,3 @@
-// Archivo: Jello-Frontend/types/index.ts
-
 // -------------------- USUARIOS --------------------
 export interface UserSummary {
   id: string;
@@ -76,7 +74,6 @@ export interface Attachment {
   type: 'image' | 'document' | 'other';
 }
 
-// --- INTERFAZ CORREGIDA ---
 export interface Comment {
   id: string;
   author: UserSummary;
@@ -141,7 +138,7 @@ export interface SearchResult {
   description: string | null;
   avatar: string | null;
   skills?: string[];
-  banner?: string;
+  bannerUrl?: string;
 }
 
 /*------------------------ Notifications --------------------*/
@@ -166,7 +163,7 @@ export interface Notification {
     | "invitation_declined"
     | "collaboration_accepted"
     | "collaboration_declined";
-  status: "pending" | "accepted" | "declined" | "info"; // Se añade 'info'
+  status: "pending" | "accepted" | "declined" | "info"; 
   read: boolean;
   project: {
     _id: string;
@@ -184,7 +181,7 @@ export interface ApiError extends Error {
     status: number;
     data: {
       error: string;
-      message?: string; // Aseguramos que también pueda tener 'message'
+      message?: string;
     };
   };
 }

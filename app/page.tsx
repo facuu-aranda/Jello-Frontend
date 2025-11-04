@@ -22,7 +22,7 @@ import {
     Check,
     Bell, // Icono importado
     Sun,  // Icono para ThemeToggle
-    Moon, // Icono para ThemeToggle
+    Moon, 
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/auth-context"; // Hook de autenticación

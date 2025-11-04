@@ -1,4 +1,3 @@
-// Jello-Frontend/components/modals/create-task-modal.tsx
 "use client"
 
 import * as React from "react"
@@ -20,14 +19,13 @@ import { AttachmentList } from "../tasks/attachment-list"
 type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
 type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 
-// Interfaz para el estado local del formulario
 export interface CreateTaskFormDataState {
   title: string;
   description: string;
   priority: TaskPriority;
   status: TaskStatus;
   dueDate: Date | undefined;
-  labels: Label[]; // Almacenamos el objeto Label completo para la UI
+  labels: Label[]; 
   assignees: string[];
   subtasks: string[];
   attachments: File[];
@@ -36,7 +34,7 @@ export interface CreateTaskFormDataState {
 interface CreateTaskModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (taskData: FormData) => void // onSubmit ahora espera un FormData
+  onSubmit: (taskData: FormData) => void 
   defaultStatus?: TaskStatus
   projectId?: string
 }
@@ -98,8 +96,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // --- INICIO DE LA CORRECCIÓN ---
-      // Construir el objeto FormData para enviar a la API
       const apiFormData = new FormData();
       
       apiFormData.append('title', formData.title);
@@ -110,18 +106,15 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit, defaultStatus = 'to
         apiFormData.append('dueDate', formData.dueDate.toISOString());
       }
       
-      // El backend espera arrays stringificados, así que los convertimos
       apiFormData.append('labels', JSON.stringify(formData.labels.map(l => l._id)));
       apiFormData.append('assignees', JSON.stringify(formData.assignees));
       apiFormData.append('subtasks', JSON.stringify(formData.subtasks));
 
-      // Adjuntar cada archivo
       formData.attachments.forEach(file => {
         apiFormData.append('attachments', file);
       });
 
       onSubmit(apiFormData); 
-      // --- FIN DE LA CORRECCIÓN ---
     }
   }
 

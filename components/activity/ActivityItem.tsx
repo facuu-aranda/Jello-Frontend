@@ -1,12 +1,9 @@
-// components/activity/ActivityItem.tsx
-
 "use client"
 
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { MessageSquare, CheckCircle, UserPlus, FileText } from "lucide-react"
-// --- NUEVO: Import para formatear la fecha ---
 import { formatDistanceToNow } from 'date-fns'
 
 
@@ -28,19 +25,16 @@ export function ActivityItem({ activity, index }: { activity: any, index: number
       transition={{ delay: index * 0.05 }}
     >
       <Link href={`/project/${activity.projectId || 1}`}>
-        <div className="flex items-start gap-3 p-4 rounded-xl hover:bg-muted transition-colors">
+        <div className="flex items-start gap-3 p-4 rounded-xl hover:bg-muted transition-colors  min-w-0">
           <div className="w-8 h-8 rounded-full bg-muted flex-shrink-0 flex items-center justify-center">
             <Icon className={`w-4 h-4 ${config.color}`} />
           </div>
           
-          {/* --- MODIFICADO: Se añade 'min-w-0' para permitir el truncado en un contenedor flex --- */}
           <div className="flex-1 min-w-0 space-y-1">
-            {/* --- MODIFICADO: Se añade la clase 'truncate' para cortar el texto largo --- */}
             <p className="text-sm text-foreground truncate">
-              <span className="font-semibold">{activity.user.name}</span> {activity.action}{" "}
-              <span className="font-semibold text-primary">"{activity.target}"</span>
+              <span className="font-semibold truncate">{activity.user.name}</span> {activity.action}{" "}
+              <span className="font-semibold text-primary truncate">"{activity.target}"</span>
             </p>
-            {/* --- MODIFICADO: Se formatea la fecha para que sea relativa (ej: "hace 5 minutos") --- */}
             <p className="text-xs text-muted-foreground">
               {formatDistanceToNow(new Date(activity.time), { addSuffix: true })}
             </p>

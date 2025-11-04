@@ -39,8 +39,13 @@ export function AttachmentList({
           <Paperclip className="w-4 h-4" />
           Attachments
         </h4>
-        {isEditing && (
-          <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
+       {isEditing && (
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={() => fileInputRef.current?.click()}
+            type="button" 
+          >
             Add
           </Button>
         )}

@@ -33,13 +33,12 @@ interface SidebarProps {
 
 export function Sidebar({ isCollapsed, onToggle, isMobileView = false }: SidebarProps) {
   const pathname = usePathname()
-  const { data: projects, isLoading: isLoadingProjects } = useApi<ProjectSummary[]>('/projects');
+  const { data: projects, isLoading: isLoadingProjects , refetch} = useApi<ProjectSummary[]>('/projects');
   
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
   
   const { data } = useApi<{ notifications: Notification[] }>('/notifications?page=1&limit=10');
 
-// Corregimos cómo se accede a los datos
 const notificationCount = data?.notifications?.filter(n => !n.read).length || 0;
 
   const notificationButton = (
@@ -102,7 +101,7 @@ const notificationCount = data?.notifications?.filter(n => !n.read).length || 0;
       <Tooltip key={project.id} delayDuration={0}>
         <TooltipTrigger asChild>
           <Link href={`/project/${project.id}`} className={cn("flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted", pathname === `/project/${project.id}` ? "text-primary" : "text-muted-foreground", isCollapsed && "justify-center")}>
-            <span className={cn("h-2 w-2 rounded-full", project.color)} />
+            <span className={cn("h-2 aspect-square w-2 min-w-2 rounded-full", project.color)} />
             <AnimatePresence>
               {!isCollapsed && (
                 <motion.span initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="flex-grow truncate">
@@ -119,7 +118,6 @@ const notificationCount = data?.notifications?.filter(n => !n.read).length || 0;
 </div>
               </div>
             </div>
-            {/* 👇 --- Este bloque ahora se oculta en la vista móvil --- 👇 */}
             {!isMobileView && (
               <div className="mt-auto pt-4 border-t border-border/50">
                 <div className={cn("flex flex-col items-center gap-2")}>
@@ -157,10 +155,10 @@ const notificationCount = data?.notifications?.filter(n => !n.read).length || 0;
         </motion.aside>
       </TooltipProvider>
       <CreateProjectModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={(data) => console.log("Creating project:", data)}
-      />
+  isOpen={isCreateModalOpen}
+  onClose={() => setIsCreateModalOpen(false)}
+  onProjectCreated={ refetch } 
+/>
     </>
   )
 }

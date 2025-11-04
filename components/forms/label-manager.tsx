@@ -21,7 +21,6 @@ interface LabelManagerProps {
   onLabelDelete: (id: string) => void;
   isSubmitting: boolean;
 }
-// --- FIN DE LA CORRECCIÓN ---
 
 export function LabelManager({ labels, onLabelAdd, onLabelDelete, isSubmitting }: LabelManagerProps) {
   const [newLabelName, setNewLabelName] = React.useState("");
@@ -58,7 +57,12 @@ export function LabelManager({ labels, onLabelAdd, onLabelDelete, isSubmitting }
             <motion.div key={label._id} initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
               <Badge variant="secondary" className="text-sm py-1 px-3" style={{ backgroundColor: label.color + '20', color: label.color }}>
                 {label.name}
-                <button onClick={() => onLabelDelete(label._id)} className="ml-2 rounded-full hover:bg-destructive/20 p-0.5" disabled={isSubmitting}>
+                <button 
+                  onClick={() => onLabelDelete(label._id)} 
+                  className="..." 
+                  disabled={isSubmitting}
+                  type="button" // <--- AÑADIR ESTA LÍNEA
+                >
                   <X className="h-3 w-3" />
                 </button>
               </Badge>

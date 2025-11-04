@@ -36,7 +36,7 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
           size="icon"
           className="rounded-full h-8 w-8 bg-background/20 hover:bg-background/80"
           onClick={(e) => {
-            e.preventDefault(); // Prevenir navegación al hacer clic en editar
+            e.preventDefault(); 
             onEdit(project);
           }}
           aria-label="Edit project"
@@ -46,10 +46,10 @@ export function ProjectCard({ project, onEdit }: ProjectCardProps) {
       </div>
 
       <Link href={`/project/${project.id}`} className="flex flex-col z-2 h-full">
-        <div className="flex-grow">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <h3 className="text-lg font-bold">{project.name}</h3>
+        <div className="flex-grow ">
+          <div className="flex items-start justify-between min-w-0">
+            <div className="space-y-2 min-w-0">
+              <h3 className="text-lg font-bold truncate">{project.name}</h3>
               {project.isOwner && (
                 <Badge variant="secondary" className="text-xs">Owner</Badge>
               )}

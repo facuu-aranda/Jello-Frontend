@@ -15,7 +15,6 @@ import { ProjectSummary } from "@/types"
 import { apiClient } from "@/lib/api"
 import { toast } from "sonner"
 
-// Este tipo se usa internamente en el formulario.
 interface ProjectFormData {
   name: string;
   description: string;
@@ -49,57 +48,14 @@ export default function ProjectsPage() {
     setIsEditModalOpen(true);
   }
 
-  // ✨ CORRECCIÓN: La función ahora acepta datos parciales y los valida.
-  const handleCreateProject = async (projectData: Partial<ProjectFormData>) => {
-    // 1. Validación
-    if (!projectData.name || projectData.name.trim() === "") {
-      toast.error("Project name is required.");
-      return;
-    }
-
-    toast.info("Creating your new project...");
-    try {
-      const formData = new FormData();
-
-formData.append('name', projectData.name!);
-formData.append('description', projectData.description || '');
-formData.append('color', projectData.color || 'bg-blue-500');
-
-if (projectData.dueDate) {
-  formData.append('dueDate', projectData.dueDate);
-}
-
-// Los arrays y objetos complejos deben ser convertidos a JSON
-const membersToJSON = JSON.stringify(
-  (projectData.members || []).map((id: string) => ({ user: id, role: 'member' }))
-);
-formData.append('members', membersToJSON);
-
-if (projectData.projectImage) {
-  formData.append('projectImage', projectData.projectImage);
-}
-if (projectData.bannerImage) {
-  formData.append('bannerImage', projectData.bannerImage);
-}
-  
-      await apiClient.post('/projects', formData);
-      toast.success("Project created successfully!");
-      refetch();
-      setIsCreateModalOpen(false); // Cierra el modal al tener éxito
-    } catch (error) {
-      toast.error((error as Error).message);
-    }
-  }
-const handleEditProject = async (projectData: FormData) => { // <-- Cambiado a FormData
+const handleEditProject = async (projectData: FormData) => { 
     if (!selectedProject) return;
     toast.info("Saving changes...");
     try {
-      // 1. El apiClient ahora recibe el FormData directamente.
       await apiClient.put(`/projects/${selectedProject.id}`, projectData);
       
       toast.success("Project updated successfully!");
       
-      // 2. refetch() le pide a tu hook useApi que vuelva a cargar los datos frescos.
       refetch(); 
       
       setIsEditModalOpen(false);
@@ -116,7 +72,7 @@ const handleEditProject = async (projectData: FormData) => { // <-- Cambiado a F
       await apiClient.del(`/projects/${projectId}`);
       toast.success("Project deleted successfully!");
       refetch();
-      setIsEditModalOpen(false); // También cierra el modal de edición
+      setIsEditModalOpen(false); 
     } catch (error) {
       toast.error((error as Error).message);
     }
@@ -178,7 +134,7 @@ const handleEditProject = async (projectData: FormData) => { // <-- Cambiado a F
       <CreateProjectModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateProject}
+        onProjectCreated={refetch}
       />
       
       {selectedProject && (

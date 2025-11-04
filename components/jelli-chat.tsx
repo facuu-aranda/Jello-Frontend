@@ -25,37 +25,34 @@ export function JelliChat() {
   ]);
   const [inputValue, setInputValue] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
-  
-  // Estados para gestionar la sesión de IA nativa
+
   const [session, setSession] = React.useState<AITextSession | null>(null);
   const [status, setStatus] = React.useState<'loading' | 'downloading' | 'ready' | 'unsupported'>('loading');
 
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // Efecto para inicializar el modelo de IA al cargar el componente
   React.useEffect(() => {
     async function initializeAi() {
       if (window.ai) {
         try {
           const available = await window.ai.canCreateTextSession('gemini-nano');
-          
+
           if (available === 'no') {
             setStatus('unsupported');
             return;
           }
-  
+
           if (available === 'after-download') {
             setStatus('downloading');
           }
-  
-          // createTextSession() iniciará la descarga si es necesario y esperará a que termine.
+
           const newSession = await window.ai.createTextSession();
           setSession(newSession);
           setStatus('ready');
         } catch (error) {
-            console.error("Error al inicializar la sesión de IA:", error);
-            setStatus('unsupported');
+          console.error("Error al inicializar la sesión de IA:", error);
+          setStatus('unsupported');
         }
       } else {
         setStatus('unsupported');
@@ -63,20 +60,17 @@ export function JelliChat() {
     }
     initializeAi();
 
-    // Limpieza al desmontar el componente
     return () => {
       session?.destroy();
     };
   }, [session]);
 
-  // Efecto para hacer scroll automático al final del chat
   React.useEffect(() => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Función para obtener y añadir el contexto de las tareas
   const handleAddTaskContext = async () => {
     toast.info("Obteniendo contexto de tareas...");
     try {
@@ -84,10 +78,10 @@ export function JelliChat() {
       if (tasks && tasks.length > 0) {
         const taskTitles = tasks.map(t => `- ${t.title} (Estado: ${t.status})`).join('\n');
         const contextPrompt = `Considerando mis tareas actuales, que son:\n${taskTitles}\n\n---\n\nQuiero preguntarte lo siguiente: `;
-        
+
         setInputValue(contextPrompt);
         toast.success("Contexto de tareas añadido al chat.");
-        inputRef.current?.focus(); // Pone el foco en el input
+        inputRef.current?.focus();
       } else {
         toast.info("No tienes tareas para añadir como contexto.");
       }
@@ -97,7 +91,6 @@ export function JelliChat() {
     }
   };
 
-  // Función para enviar mensajes
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
 
@@ -108,7 +101,6 @@ export function JelliChat() {
 
     const jelliMessageId = (Date.now() + 1).toString();
 
-    // Manejo del caso en que la IA no es compatible
     if (status !== 'ready' || !session) {
       setTimeout(() => {
         const unsupportedMessage = "Lo siento, la IA integrada no está disponible en tu navegador.\n\nEsta función requiere **Chrome 127** o superior con las funciones experimentales activadas. Estoy simulando una respuesta para que veas cómo funcionaría.";
@@ -118,22 +110,21 @@ export function JelliChat() {
       return;
     }
 
-    // Lógica para la IA compatible
     setMessages(prev => [...prev, { id: jelliMessageId, content: "", sender: "jelli" }]);
 
     try {
       const stream = session.promptStreaming(inputValue);
 
       for await (const chunk of stream) {
-        setMessages(prev => prev.map(msg => 
-          msg.id === jelliMessageId 
-            ? { ...msg, content: msg.content + chunk } 
+        setMessages(prev => prev.map(msg =>
+          msg.id === jelliMessageId
+            ? { ...msg, content: msg.content + chunk }
             : msg
         ));
       }
     } catch (err) {
       const errorMsgContent = "Lo siento, he tenido un problema al procesar tu solicitud.";
-      setMessages(prev => prev.map(msg => 
+      setMessages(prev => prev.map(msg =>
         msg.id === jelliMessageId
           ? { ...msg, content: errorMsgContent }
           : msg
@@ -143,15 +134,14 @@ export function JelliChat() {
     }
   };
 
-  // Resetea el chat a su estado inicial
   const handleNewChat = async () => {
     session?.destroy();
     setMessages([{ id: "init-reset", content: "Ok, empecemos de nuevo. ¿En qué puedo ayudarte?", sender: "jelli" }]);
     if (window.ai) {
-        setStatus('loading');
-        const newSession = await window.ai.createTextSession();
-        setSession(newSession);
-        setStatus('ready');
+      setStatus('loading');
+      const newSession = await window.ai.createTextSession();
+      setSession(newSession);
+      setStatus('ready');
     }
   };
 
@@ -161,9 +151,9 @@ export function JelliChat() {
         <div className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
           <div className="flex items-center gap-3">
             <Avatar className="w-10 h-10 border-2 border-jello-blue/30">
-  <AvatarImage src="/images/jelli-avatar.png" alt="Jelli" />
-  <AvatarFallback>J</AvatarFallback>
-</Avatar>
+              <AvatarImage src="/images/jelli-avatar.png" alt="Jelli" />
+              <AvatarFallback>J</AvatarFallback>
+            </Avatar>
             <div>
               <h3 className="font-semibold text-foreground">Jelli</h3>
               <p className="text-xs text-muted-foreground flex items-center gap-1.5">
@@ -190,37 +180,37 @@ export function JelliChat() {
                 className={`flex gap-3 ${message.sender === "user" ? "justify-end" : "justify-start"}`}
               >
                 {message.sender === "jelli" && <Avatar className="w-10 h-10 border-2 border-jello-blue/30">
-  <AvatarImage src="/images/jelli-avatar.png" alt="Jelli" />
-  <AvatarFallback>J</AvatarFallback>
-</Avatar>}
+                  <AvatarImage src="/images/jelli-avatar.png" alt="Jelli" />
+                  <AvatarFallback>J</AvatarFallback>
+                </Avatar>}
                 <div className={`max-w-[80%] ${message.sender === "user" ? "order-first" : ""}`}>
                   <div className={`p-3 rounded-2xl ${message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-white/10 text-foreground"}`}>
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content || "..."}</p>
                   </div>
                 </div>
-                {message.sender === "user" && 
+                {message.sender === "user" &&
                   <Avatar className="w-8 h-8 flex-shrink-0">
-                      <AvatarImage src={user?.avatarUrl || "/placeholder.svg"} />
-                      <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={user?.avatarUrl || "/placeholder.svg"} />
+                    <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                 }
               </motion.div>
             ))}
-             {isLoading && messages[messages.length -1]?.sender === 'user' && (
-               <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex gap-3 justify-start"
-                >
-                  <Avatar className="w-10 h-10 border-2 border-jello-blue/30">
-  <AvatarImage src="/images/jelli-avatar.png" alt="Jelli" />
-  <AvatarFallback>J</AvatarFallback>
-</Avatar>
-                  <div className="p-3 rounded-2xl bg-white/10 text-foreground">
-                    <span className="animate-pulse">...</span>
-                  </div>
-               </motion.div>
-             )}
+            {isLoading && messages[messages.length - 1]?.sender === 'user' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex gap-3 justify-start"
+              >
+                <Avatar className="w-10 h-10 border-2 border-jello-blue/30">
+                  <AvatarImage src="/images/jelli-avatar.png" alt="Jelli" />
+                  <AvatarFallback>J</AvatarFallback>
+                </Avatar>
+                <div className="p-3 rounded-2xl bg-white/10 text-foreground ">
+                  <span className="animate-pulse">...</span>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
