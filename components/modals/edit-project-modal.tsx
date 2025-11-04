@@ -21,6 +21,7 @@ import { UserPlus } from "lucide-react"
 import { LabelManager } from "@/components/forms/label-manager"
 import { apiClient } from "@/lib/api"
 import { toast } from "sonner"
+import { DeleteProjectConfirmModal } from "./DeleteProjectConfirmModal"
 
 interface ProjectFormData {
   name: string;
@@ -47,7 +48,7 @@ export function EditProjectModal({ isOpen, onClose, onSubmit, onDelete, project,
   const [formData, setFormData] = React.useState<ProjectFormData>({ name: '', description: '', color: '' });
   const [isUserSearchModalOpen, setIsUserSearchModalOpen] = React.useState(false);
   const [currentMembers, setCurrentMembers] = React.useState<UserSummary[]>([]);
-
+const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false);
 const [projectLabels, setProjectLabels] = React.useState<LabelType[]>([]);
 const [labelsToAdd, setLabelsToAdd] = React.useState<string[]>([]);
 const [labelsToDelete, setLabelsToDelete] = React.useState<string[]>([]);
@@ -223,7 +224,7 @@ const handleLabelDelete = (id: string) => {
             </form>
           </div>
           <DialogFooter className="flex-shrink-0 pt-4 flex-nowrap justify-between w-full">
-              <Button variant="destructive" onClick={() => onDelete(project.id)}>Delete Project</Button>
+<Button variant="destructive" onClick={() => setIsDeleteConfirmOpen(true)}>Delete Project</Button>
               <div className="flex gap-2">
                   <Button variant="ghost" onClick={onClose}>Cancel</Button>
                   <Button type="submit" form="edit-project-form">Save changes</Button>
@@ -237,6 +238,15 @@ const handleLabelDelete = (id: string) => {
         onClose={() => setIsUserSearchModalOpen(false)}
         onSelectUsers={handleInviteUsers}
         excludedUserIds={currentMembers.map(m => m.id)}
+      />
+      <DeleteProjectConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => setIsDeleteConfirmOpen(false)}
+        projectName={project.name}
+        onConfirmDelete={() => {
+          setIsDeleteConfirmOpen(false); 
+          onDelete(project.id);       
+        }}
       />
     </>
   )

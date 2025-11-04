@@ -157,8 +157,7 @@ export default function ProjectPage() {
   }
 
   const handleDeleteProject = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) return;
-    toast.info("Deleting project...");
+    toast.info("Eliminando proyecto...");
     try {
       await apiClient.del(`/projects/${id}`);
       toast.success("Project deleted.");
